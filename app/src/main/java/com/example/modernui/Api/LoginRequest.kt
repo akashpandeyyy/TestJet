@@ -1,4 +1,4 @@
-package com.example.modernui
+package com.example.modernui.Api
 
 import com.google.gson.annotations.SerializedName
 

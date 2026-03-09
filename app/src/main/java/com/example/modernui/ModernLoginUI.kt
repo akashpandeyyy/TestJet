@@ -24,34 +24,40 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.modernui.ui.theme.FintechRegisterScreenM3
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.sin
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FintechLoginScreenM3(
-
+    viewModel: UserViewModel = hiltViewModel(),
+    onLoginSuccess: () -> Unit,
+    onRegisterClick: () -> Unit
 ) {
-
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val scope = rememberCoroutineScope()
+    val uiState by viewModel.state.collectAsState()
 
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var isPasswordVisible by rememberSaveable { mutableStateOf(false) }
-    var isLoading by rememberSaveable { mutableStateOf(false) }
     var acceptTerms by rememberSaveable { mutableStateOf(false) }
 
     val colorScheme = MaterialTheme.colorScheme
 
+    LaunchedEffect(uiState) {
+        if (uiState is UiState.Success) {
+            onLoginSuccess()
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
-        // Background
         AnimatedBackgroundParticlesM3(color = colorScheme.primary.copy(alpha = 0.08f))
 
         Column(
@@ -91,14 +97,13 @@ fun FintechLoginScreenM3(
                     OutlinedTextField(
                         value = email,
                         onValueChange = { email = it },
-                        label = { Text("Email Address") },
-                        leadingIcon = { Icon(Icons.Default.Email, null) },
+                        label = { Text("User ID") },
+                        leadingIcon = { Icon(Icons.Default.PermIdentity, null) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
-                        // FIX: Named parameters use karein
                         keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Email,
+                            keyboardType = KeyboardType.Number,
                             imeAction = ImeAction.Next
                         ),
                         keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
@@ -119,7 +124,6 @@ fun FintechLoginScreenM3(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
-                        // FIX: Named parameters use karein
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Password,
                             imeAction = ImeAction.Done
@@ -143,28 +147,26 @@ fun FintechLoginScreenM3(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
+                    if (uiState is UiState.Error) {
+                        Text(
+                            text = (uiState as UiState.Error).message,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+
                     Button(
                         onClick = {
-                            isLoading = true
-                            scope.launch {
-                                delay(1500)
-                                isLoading = false
-                                if (email == "admin@softmint.com" && password == "123456") {
-                                 //   onLoginSuccess()
-                                    Toast.makeText(context, "Rukk Jaa Bhai ", Toast.LENGTH_SHORT).show()
-
-                                } else {
-                                    Toast.makeText(context, "Invalid ID or Password", Toast.LENGTH_SHORT).show()
-                                }
-                            }
+                            viewModel.performLogin(context, email, password)
                         },
-                        enabled = email.isNotEmpty() && password.length >= 6 && acceptTerms && !isLoading,
+                        enabled = email.isNotEmpty() && password.length >= 6 && acceptTerms && uiState !is UiState.Loading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
                         shape = RoundedCornerShape(16.dp)
                     ) {
-                        if (isLoading) {
+                        if (uiState is UiState.Loading) {
                             CircularProgressIndicator(modifier = Modifier.size(24.dp), color = colorScheme.onPrimary, strokeWidth = 2.dp)
                         } else {
                             Text("Sign In", style = MaterialTheme.typography.titleMedium)
@@ -173,9 +175,8 @@ fun FintechLoginScreenM3(
                 }
             }
 
-            // Moved "New User" link here - outside the card for better UX
             TextButton(
-               onClick = {  },
+                onClick = { onRegisterClick() },
                 modifier = Modifier.padding(top = 16.dp)
             ) {
                 Text("New user? Create an account", fontWeight = FontWeight.SemiBold)
@@ -210,7 +211,7 @@ fun AnimatedLogoM3() {
 @Composable
 fun AnimatedBackgroundParticlesM3(color: Color) {
     val infiniteTransition = rememberInfiniteTransition(label = "particles_bg")
-    val count = 12
+    val count = 4
 
     val animationStates = (0 until count).map { i ->
         infiniteTransition.animateFloat(
@@ -219,46 +220,97 @@ fun AnimatedBackgroundParticlesM3(color: Color) {
             animationSpec = infiniteRepeatable(
                 animation = tween(8000 + (i * 1500), easing = LinearEasing),
                 repeatMode = RepeatMode.Reverse
-            ), label = ""
+            ), label = "anim_$i"
         )
     }
 
     Canvas(modifier = Modifier.fillMaxSize()) {
         animationStates.forEachIndexed { i, animState ->
             val progress = animState.value
-            val x = (size.width * (i % 4) / 4f) + (progress * 100f)
-            val y = (size.height * (i % 3) / 3f) + (progress * 80f)
+            val side = if (i % 2 == 0) 0.1f else 0.9f
+            val x = (size.width * side) + (sin(progress * 3.14f) * 50f)
+            val y = (size.height * 0.2f) + ((size.height * 0.7f) * (i.toFloat() / count)) + (progress * 50f)
 
             drawCircle(
                 color = color,
-                radius = 120f + (i * 15f),
+                radius = 80f + (i * 5f),
                 center = Offset(x, y)
             )
         }
     }
 }
-//
-//@Composable
-//fun AppNavigation() {
-//    val navController = rememberNavController()
-//
-//    NavHost(navController = navController, startDestination = "login") {
-//        composable("login") {
-//            FintechLoginScreenM3(
-//                onLoginSuccess = {
-//                    navController.navigate("dashboard") {
-//                        popUpTo("login") { inclusive = true }
-//                    }
-//                },
-//                onRegisterClick = { navController.navigate("register") }
-//            )
-//        }
-//        composable("register") {
-//            // Ensure this function is defined in your project
-//            FintechRegisterScreenM3(onBackToLogin = { navController.popBackStack() })
-//        }
-//        composable("dashboard") {
-//            FintechDashboardM3()
-//        }
-//    }
-//}
+@Composable
+fun AppNavigation() {
+    val navController = rememberNavController()
+
+    NavHost(navController = navController, startDestination = "login") {
+
+        composable("login") {
+            // ✅ ViewModel is OWNED here — lives as long as login is in backstack
+            val userViewModel: UserViewModel = hiltViewModel()
+
+            FintechLoginScreenM3(
+                viewModel = userViewModel,
+                onLoginSuccess = {
+                    navController.navigate("Userdetail") {
+                        popUpTo("login") { inclusive = false } // ✅ keep login entry alive so Userdetail can borrow its ViewModel
+                    }
+                },
+                onRegisterClick = { navController.navigate("register") }
+            )
+        }
+
+        composable("register") {
+            FintechRegisterScreenM3(onBackToLogin = { navController.popBackStack() })
+        }
+
+        composable("Userdetail") {
+            // ✅ Grab the SAME ViewModel instance that login screen owns
+            val loginBackStackEntry = remember(it) {
+                navController.getBackStackEntry("login")
+            }
+            val userViewModel: UserViewModel = hiltViewModel(loginBackStackEntry)
+            val uiState by userViewModel.state.collectAsState()
+
+            when (val state = uiState) {
+                is UiState.Success -> {
+                    UserDetailScreenM3(
+                        viewModel = userViewModel,
+                        onBackClick = { navController.popBackStack() },
+                        onContinueToDashboard = {
+                            navController.navigate("dashboard") {
+                                popUpTo("login") { inclusive = true } // ✅ now safe to clear login
+                            }
+                        }
+                    )
+                }
+                is UiState.Loading -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+                is UiState.Error -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("Error: ${state.message}", color = MaterialTheme.colorScheme.error)
+                            Spacer(Modifier.height(16.dp))
+                            Button(onClick = { navController.popBackStack() }) {
+                                Text("Back to Login")
+                            }
+                        }
+                    }
+                }
+                else -> {
+                    // Should never reach here since login always sets state before navigating
+                    LaunchedEffect(Unit) {
+                        navController.navigate("login") { popUpTo(0) }
+                    }
+                }
+            }
+        }
+
+        composable("dashboard") {
+            FintechDashboardM3()
+        }
+    }
+}
