@@ -1,17 +1,26 @@
 package com.example.modernui.Api
+import com.google.gson.annotations.SerializedName
 
-
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-
-@Serializable
 data class UserResponse(
-    @SerialName("email")
-    val email: String?,
-    @SerialName("id")
-    val id: Int?,
-    @SerialName("token")
-    val token: String?,
-    @SerialName("username")
-    val username: String?
+    @SerializedName("status") val status: Int,
+    @SerializedName("message") val message: String?,
+    @SerializedName("errorMessage") val errorMessage: String?,
+    @SerializedName("data") val data: LoginData?
+)
+
+data class LoginData(
+    @SerializedName("token") val token: String?,
+    @SerializedName("userData") val userData: MyUserData?
+)
+
+data class MyUserData(
+    @SerializedName("userId") val userId: String?,
+    @SerializedName("name") val name: String?,
+    @SerializedName("email") val email: String?,
+    @SerializedName("mobile") val mobile: String?,
+    @SerializedName("role") val roleId: String?,
+    @SerializedName("address") val address: String?,
+    @SerializedName("id") val id: Int?,
+    @SerializedName("phone") val phone: String?,
+    @SerializedName("role_name") val role: String?
 )
