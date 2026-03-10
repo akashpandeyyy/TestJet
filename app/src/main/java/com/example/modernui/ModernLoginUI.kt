@@ -158,7 +158,7 @@ fun FintechLoginScreenM3(
 
                     Button(
                         onClick = {
-                            viewModel.performLogin(context, email, password)
+                            viewModel.performLogin( email, password)
                         },
                         enabled = email.isNotEmpty() && password.length >= 6 && acceptTerms && uiState !is UiState.Loading,
                         modifier = Modifier
