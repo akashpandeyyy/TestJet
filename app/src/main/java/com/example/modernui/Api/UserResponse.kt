@@ -9,7 +9,7 @@ data class UserResponse(
 )
 
 data class LoginData(
-    @SerializedName("token") val token: String?,
+    @SerializedName("token") val token:  String?,
     @SerializedName("userData") val userData: MyUserData?
 )
 

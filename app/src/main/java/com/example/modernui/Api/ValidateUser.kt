@@ -1,3 +1,5 @@
+package com.example.modernui.Api
+
 import com.google.gson.annotations.SerializedName
 
 data class ValidateUser(

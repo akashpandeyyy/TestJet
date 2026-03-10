@@ -1,20 +1,29 @@
 package com.example.modernui.Api
 
+import android.util.Log
 import okhttp3.Interceptor
+import okhttp3.Response
 
-class ResponseInterseptor {
-    val responseInterceptor = Interceptor { chain ->
+class ResponseInterceptor : Interceptor {
+
+    override fun intercept(chain: Interceptor.Chain): Response {
         val response = chain.proceed(chain.request())
 
-        // Check karo status code
-        if (response.code == 401 || response.code == 403) {
-            // Logout logic yahan aayega
-            println("Session Expired! Logging out...")
-
-            // Android mein login page pe bhejne ka logic (Intent use karke)
-            // Note: Yahan se Activity start karne ke liye Context ki zaroorat padegi
+        when (response.code) {
+            401 -> {
+                Log.e("ResponseInterceptor", "Unauthorized! Token expired.")
+                // clear token + redirect to login
+            }
+            403 -> {
+                Log.e("ResponseInterceptor", "Forbidden! Access denied.")
+            }
+            500 -> {
+                Log.e("ResponseInterceptor", "Server Error!")
+            }
         }
 
-        response
+
+
+        return response
     }
 }
