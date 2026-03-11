@@ -1,9 +1,7 @@
 package com.example.modernui.Api
 
 import android.content.Context
-import android.util.Log
 import com.example.modernui.BuildConfig
-import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -12,33 +10,50 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitInstance {
 
-    private lateinit var appContext: Context
+    private var appContext: Context? = null
     private const val HOST = "bc.finrichtechnology.com"
     private const val BASE_URL = "https://$HOST/"
+    private const val BASE_URLL = "https://jsonplaceholder.typicode.com/"
 
-    private fun getOkHttpClient(context: Context): OkHttpClient {
-        return OkHttpClient.Builder()
-            .addInterceptor(RequestInterceptor(context))   // adds headers to every request
-            .addInterceptor(ResponseInterceptor())         // handles all response codes
-            .addInterceptor(HttpLoggingInterceptor().apply {
-                level = if (BuildConfig.DEBUG)
-                    HttpLoggingInterceptor.Level.BODY
-                else
-                    HttpLoggingInterceptor.Level.NONE
-            })
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .build()
+
+    fun init(context: Context) {
+        appContext = context.applicationContext
     }
 
+    private val okHttpClient: OkHttpClient by lazy {
+        val builder = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
 
+        appContext?.let {
+            builder.addInterceptor(RequestInterceptor(it))
+        }
+        
+        builder.addInterceptor(ResponseInterceptor())
+        
+        if (BuildConfig.DEBUG) {
+            builder.addInterceptor(HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BODY
+            })
+        }
+        
+        builder.build()
+    }
 
-    val api: ApiService = Retrofit.Builder()
-        .baseUrl(BASE_URL)
-        .addConverterFactory(GsonConverterFactory.create())
-        .client(getOkHttpClient(appContext))
-        .build()
-        .create(ApiService::class.java)
+    val api: ApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .client(okHttpClient)
+            .build()
+            .create(ApiService::class.java)
+    }
+    val apii: ApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URLL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(ApiService::class.java)
+    }
+
 }
-//st val HOST = "bc.finrichtechnology.com"
-//  const val BASE_URL = "https://$HOST/"

@@ -64,7 +64,7 @@ sealed class ApiError {
 
 // ─────────────────────────────────────────────
 // 2. API Error Mapper (maps HTTP codes → ApiError)
-// ─────────────────────────────────────────────
+// ────────────────────────────────────────────
 
 object ApiErrorMapper {
     fun fromHttpCode(code: Int, serverMessage: String? = null): ApiError {
