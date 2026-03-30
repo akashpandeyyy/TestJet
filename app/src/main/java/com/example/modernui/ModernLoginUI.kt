@@ -253,7 +253,7 @@ fun AppNavigation() {
                 viewModel = userViewModel,
                 onLoginSuccess = {
                     navController.navigate("Userdetail") {
-                        popUpTo("login") { inclusive = false } // ✅ keep login entry alive so Userdetail can borrow its ViewModel
+                        popUpTo("login") { inclusive = false } // keep login entry alive so Userdetail can borrow its ViewModel
                     }
                 },
                 onRegisterClick = { navController.navigate("register") }

@@ -6,7 +6,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.AddLocation
 import androidx.compose.material.icons.filled.AddLocationAlt
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.*
@@ -140,7 +142,7 @@ fun UserDetailContent(
                 shape = RoundedCornerShape(24.dp)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    InfoRowItem(icon = Icons.Default.AddLocationAlt, label = "Address", value = userData.address ?: "Not Provided")
+                    InfoRowItem(icon = Icons.Default.LocationOn, label = "Address", value = userData.address ?: "Not Provided")
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 12.dp),
                         color = colorScheme.outlineVariant.copy(alpha = 0.4f)

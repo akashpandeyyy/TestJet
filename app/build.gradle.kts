@@ -89,6 +89,7 @@ dependencies {
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.compose.ui.unit)
+    implementation(libs.firebase.firestore)
     ksp(libs.hilt.compiler)
 
     // Retrofit

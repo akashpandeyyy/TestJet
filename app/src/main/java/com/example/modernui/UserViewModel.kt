@@ -31,7 +31,7 @@ class UserViewModel @Inject constructor(
         viewModelScope.launch {
             _state.value = UiState.Loading
             try {
-                val response = userRepo.userLogin(LoginRequest(userIn, passIn))
+                val response = userRepo.userLogin(LoginRequest(userIn,   passIn))
                 if (response.status == 1) {
                     val tkn = response.data?.token
 

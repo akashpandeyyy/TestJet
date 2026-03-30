@@ -7,7 +7,7 @@ import javax.inject.Singleton
 
 @Singleton
 class UserRepo @Inject constructor(
-    private val apiService: ApiService,
+    @MainApi private val apiService: ApiService,
     @ApplicationContext private val context: Context
 ) {
     suspend fun userLogin(request: LoginRequest): UserResponse {
@@ -21,7 +21,6 @@ class UserRepo @Inject constructor(
     suspend fun validateuserLogin(request: LoginRequest): ValidateUser {
         return apiService.validateuserLogin(request)
     }
-
     private fun saveToken(token: String) {
         val sharedPref = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         with(sharedPref.edit()) {
