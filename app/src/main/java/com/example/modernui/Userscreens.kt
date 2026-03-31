@@ -15,6 +15,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.filled.SendToMobile
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -47,18 +51,25 @@ private val PowerRed   = Color(0xFF8B0000)
 // ─────────────────────────────────────────────
 
 private val serviceItems = listOf(
-    ServiceItem("Cash Deposit",  Icons.Default.AccountBalance),
-    ServiceItem("Send Money",    Icons.Default.Send),
-    ServiceItem("Withdraw",      Icons.Default.MoneyOff),
-    ServiceItem("History",       Icons.Default.History),
-    ServiceItem("Pay Bills",     Icons.Default.Receipt),
-    ServiceItem("Recharge",      Icons.Default.PhoneAndroid),
-    ServiceItem("Settings",      Icons.Default.Settings),
-    ServiceItem("Profile",       Icons.Default.Person),
-    ServiceItem("Investments",   Icons.Default.TrendingUp),
-    ServiceItem("Insurance",     Icons.Default.Shield),
-    ServiceItem("Loans",         Icons.Default.CreditCard),
-    ServiceItem("UPI",           Icons.Default.QrCode),
+    ServiceItem("Cash Deposit", Icons.Default.AccountBalance),
+    ServiceItem("Send Money",   Icons.AutoMirrored.Filled.Send),
+    ServiceItem("Withdraw",     Icons.Default.Money),
+    ServiceItem("Move To Bank", Icons.Default.AccountBalanceWallet),
+    ServiceItem("DMT",          Icons.AutoMirrored.Filled.SendToMobile),
+    ServiceItem("AEPS",         Icons.Default.Fingerprint),
+    ServiceItem("Micro ATM",    Icons.Default.Atm),
+    ServiceItem("Aadhar Pay",   Icons.Default.Pin),
+    ServiceItem("Bill Payment", Icons.AutoMirrored.Filled.ReceiptLong),
+    ServiceItem("Recharge",     Icons.Default.PhoneAndroid),
+    ServiceItem("Airtel CMS",   Icons.Default.Payments),
+    ServiceItem("Broadband",    Icons.Default.Router),
+    ServiceItem("History",      Icons.Default.History),
+    ServiceItem("Investments",  Icons.AutoMirrored.Filled.TrendingUp),
+    ServiceItem("Insurance",    Icons.Default.Shield),
+    ServiceItem("Loans",        Icons.Default.CreditCard),
+    ServiceItem("UPI",          Icons.Default.QrCode),
+    ServiceItem("Settings",     Icons.Default.Settings),
+    ServiceItem("Profile",      Icons.Default.Person),
 )
 
 private val bannerSlides = listOf(
