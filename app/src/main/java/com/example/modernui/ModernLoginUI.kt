@@ -239,33 +239,40 @@ fun AnimatedBackgroundParticlesM3(color: Color) {
         }
     }
 }
+
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = "login") {
 
+        // ── LOGIN ─────────────────────────────────────────────────────────────
         composable("login") {
-            // ✅ ViewModel is OWNED here — lives as long as login is in backstack
+            // ViewModel is OWNED here — lives as long as login is in the backstack
             val userViewModel: UserViewModel = hiltViewModel()
 
             FintechLoginScreenM3(
                 viewModel = userViewModel,
                 onLoginSuccess = {
                     navController.navigate("Userdetail") {
-                        popUpTo("login") { inclusive = false } // ✅ keep login entry alive so Userdetail can borrow its ViewModel
+                        // Keep login entry alive so Userdetail can borrow its ViewModel
+                        popUpTo("login") { inclusive = false }
                     }
                 },
                 onRegisterClick = { navController.navigate("register") }
             )
         }
 
+        // ── REGISTER ──────────────────────────────────────────────────────────
         composable("register") {
-            FintechRegisterScreenM3(onBackToLogin = { navController.popBackStack() })
+            FintechRegisterScreenM3(
+                onBackToLogin = { navController.popBackStack() }
+            )
         }
 
+        // ── USER DETAIL ───────────────────────────────────────────────────────
         composable("Userdetail") {
-            // ✅ Grab the SAME ViewModel instance that login screen owns
+            // Grab the SAME ViewModel instance that login screen owns
             val loginBackStackEntry = remember(it) {
                 navController.getBackStackEntry("login")
             }
@@ -279,7 +286,8 @@ fun AppNavigation() {
                         onBackClick = { navController.popBackStack() },
                         onContinueToDashboard = {
                             navController.navigate("dashboard") {
-                                popUpTo("login") { inclusive = true } // ✅ now safe to clear login
+                                // Safe to clear login now — data is already in the dashboard VM
+                                popUpTo("login") { inclusive = true }
                             }
                         }
                     )
@@ -292,7 +300,10 @@ fun AppNavigation() {
                 is UiState.Error -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Error: ${state.message}", color = MaterialTheme.colorScheme.error)
+                            Text(
+                                "Error: ${state.message}",
+                                color = MaterialTheme.colorScheme.error
+                            )
                             Spacer(Modifier.height(16.dp))
                             Button(onClick = { navController.popBackStack() }) {
                                 Text("Back to Login")
@@ -301,7 +312,7 @@ fun AppNavigation() {
                     }
                 }
                 else -> {
-                    // Should never reach here since login always sets state before navigating
+                    // Should never reach here — login always sets state before navigating
                     LaunchedEffect(Unit) {
                         navController.navigate("login") { popUpTo(0) }
                     }
@@ -309,8 +320,19 @@ fun AppNavigation() {
             }
         }
 
+        // ── DASHBOARD (shell with all 4 tabs inside) ──────────────────────────
+        //
+        // ✅ FintechAppShell replaces the old FintechDashboardM3.
+        //    Tab switching (Home / Wallet / Report / History) happens internally
+        //    via the shared selectedTab state inside FintechAppShellContent.
+        //    No extra nav routes needed for the tabs — the back stack stays clean.
+        //
+        //    The ViewModel is freshly owned here. Login's backstack entry was
+        //    cleared by popUpTo("login") { inclusive = true } above, so Hilt
+        //    creates a new scoped instance for the dashboard lifecycle.
+        //
         composable("dashboard") {
-            FintechDashboardM3()
+            FintechAppShell()
         }
     }
 }

@@ -89,6 +89,8 @@ dependencies {
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.compose.ui.unit)
+    implementation(libs.firebase.firestore)
+    implementation(libs.ads.mobile.sdk)
     ksp(libs.hilt.compiler)
 
     // Retrofit
@@ -106,4 +108,10 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+    implementation("com.google.code.gson:gson:2.13.2")
+// or Moshi
+    implementation("com.squareup.moshi:moshi:1.15.2")
+    implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
+    implementation("androidx.paging:paging-runtime:3.4.2")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
 }
