@@ -16,6 +16,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.modernui.Api.LoginData
 import com.example.modernui.Api.MyUserData
 import com.example.modernui.Api.UserResponse
@@ -44,7 +47,7 @@ fun FintechDashboardContent(uiState: UiState) {
                 title = { Text("Welcome, ${userData?.name ?: "User"}", fontWeight = FontWeight.Bold) },
                 actions = {
                     IconButton(onClick = { }) { Icon(Icons.Default.Notifications, "Notifications") }
-                    IconButton(onClick = { }) { Icon(Icons.Default.Report, "Profile") }
+                    IconButton(onClick = { }) { Icon(Icons.Default.AccountCircle, "Profile") }
                 },
                 colors = TopAppBarDefaults.largeTopAppBarColors(
                     containerColor = colorScheme.surface,
@@ -75,8 +78,8 @@ fun FintechDashboardContent(uiState: UiState) {
                 NavigationBarItem(
                     selected = false,
                     onClick = { },
-                    icon = { Icon(Icons.Default.AccountCircle, null) },
-                    label = { Text("Profile") }
+                    icon = { Icon(Icons.Default.History, null) },
+                    label = { Text("History") }
                 )
             }
         }
@@ -187,3 +190,79 @@ fun PreviewFintechDashboardM3() {
         FintechDashboardContent(uiState = dummyUiState)
     }
 }
+// here is the app navigation controller
+//@Composable
+//fun AppNavigation() {
+//    val navController = rememberNavController()
+//
+//    NavHost(navController = navController, startDestination = "login") {
+//
+//        composable("login") {
+//            // ✅ ViewModel is OWNED here — lives as long as login is in backstack
+//            val userViewModel: UserViewModel = hiltViewModel()
+//
+//            FintechDashboardContent(
+//                viewModel = userViewModel,
+//                onLoginSuccess = {
+//                    navController.navigate("Userdetail") {
+//                        popUpTo("login") { inclusive = false } // keep login entry alive so Userdetail can borrow its ViewModel
+//                    }
+//                },
+//                onwallet = { navController.navigate("register") }
+//            )
+//        }
+//
+//        composable("register") {
+//            FintechRegisterScreenM3(onBackToLogin = { navController.popBackStack() })
+//        }
+//
+//        composable("Userdetail") {
+//            // ✅ Grab the SAME ViewModel instance that login screen owns
+//            val loginBackStackEntry = remember(it) {
+//                navController.getBackStackEntry("login")
+//            }
+//            val userViewModel: UserViewModel = hiltViewModel(loginBackStackEntry)
+//            val uiState by userViewModel.state.collectAsState()
+//
+//            when (val state = uiState) {
+//                is UiState.Success -> {
+//                    UserDetailScreenM3(
+//                        viewModel = userViewModel,
+//                        onBackClick = { navController.popBackStack() },
+//                        onContinueToDashboard = {
+//                            navController.navigate("dashboard") {
+//                                popUpTo("login") { inclusive = true } // ✅ now safe to clear login
+//                            }
+//                        }
+//                    )
+//                }
+//                is UiState.Loading -> {
+//                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+//                        CircularProgressIndicator()
+//                    }
+//                }
+//                is UiState.Error -> {
+//                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+//                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+//                            Text("Error: ${state.message}", color = MaterialTheme.colorScheme.error)
+//                            Spacer(Modifier.height(16.dp))
+//                            Button(onClick = { navController.popBackStack() }) {
+//                                Text("Back to Login")
+//                            }
+//                        }
+//                    }
+//                }
+//                else -> {
+//                    // Should never reach here since login always sets state before navigating
+//                    LaunchedEffect(Unit) {
+//                        navController.navigate("login") { popUpTo(0) }
+//                    }
+//                }
+//            }
+//        }
+//
+//        composable("dashboard") {
+//            FintechDashboardM3()
+//        }
+//    }
+//}

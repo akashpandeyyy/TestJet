@@ -12,7 +12,8 @@ object RetrofitInstance {
 
     private var appContext: Context? = null
     private const val HOST = "bc.finrichtechnology.com"
-    private const val BASE_URL = "https://$HOST/"
+   // private const val BASE_URL = "https://$HOST/"
+    private const val BASE_URL = "https://b2buat.softmintdigital.com/"
     private const val BASE_URLL = "https://jsonplaceholder.typicode.com/"
 
 
