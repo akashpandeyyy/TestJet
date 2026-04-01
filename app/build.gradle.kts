@@ -92,6 +92,7 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.ads.mobile.sdk)
     ksp(libs.hilt.compiler)
+    implementation(libs.androidx.datastore.preferences)
 
     // Retrofit
     implementation(libs.retrofit)

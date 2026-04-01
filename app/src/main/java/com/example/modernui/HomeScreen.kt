@@ -1,102 +1,404 @@
 package com.example.modernui
 
-import androidx.compose.foundation.*
+import android.content.res.Configuration
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
-import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.automirrored.filled.SendToMobile
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingFlat
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 
-private val NavyDark   = Color(0xFF0B0E71)
-private val NavyLight  = Color(0xFF1A1F8F)
+// ─────────────────────────────────────────────
+// DATA & CONSTANTS
+// ─────────────────────────────────────────────
+
+private val serviceItems = listOf(
+    ServiceItem("AEPS",              Icons.Default.Fingerprint),
+    ServiceItem("Cash Deposit",      Icons.Default.AccountBalance),
+    ServiceItem("AEPS2",             Icons.Default.Fingerprint),
+    ServiceItem("Aadhar Pay",        Icons.Default.Pin),
+    ServiceItem("Airtel DMT",        Icons.AutoMirrored.Filled.SendToMobile),
+    ServiceItem("Jio DMT",           Icons.AutoMirrored.Filled.SendToMobile),
+    ServiceItem("NSDL Pan Apply",    Icons.Default.Badge),
+    ServiceItem("Booking Insurance", Icons.Default.Security),
+    ServiceItem("Airtel CMS",        Icons.Default.Router),
+    ServiceItem("Mobile Recharge",   Icons.Default.Smartphone),
+    ServiceItem("DTH Recharge",      Icons.Default.Tv),
+    ServiceItem("BBPS",              Icons.AutoMirrored.Filled.ReceiptLong),
+    ServiceItem("UTI PAN Apply",     Icons.Default.Badge),
+    ServiceItem("Move To Bank",      Icons.AutoMirrored.Filled.TrendingFlat),
+)
+
+private val bannerSlides = listOf(
+    BannerSlide("Cashback Offer",   "Get 10% back on bill payments", Color(0xFF1565C0)),
+    BannerSlide("Send Money Free",  "Zero fee transfers this week",  Color(0xFF2E7D32)),
+    BannerSlide("New: UPI Autopay", "Set up recurring payments",     Color(0xFF6A1B9A)),
+)
+
+
+// ─────────────────────────────────────────────
+// HOME CONTENT
+// ─────────────────────────────────────────────
 
 @Composable
-fun AlternativeHomeScreen() {
-    val serviceItems = listOf(
-        ServiceItem("Cash Deposit", Icons.Default.AccountBalance),
-        ServiceItem("Send Money",   Icons.AutoMirrored.Filled.Send),
-        ServiceItem("Withdraw",     Icons.Default.Money),
-        ServiceItem("Move To Bank", Icons.Default.AccountBalanceWallet),
-        ServiceItem("DMT",          Icons.AutoMirrored.Filled.SendToMobile),
-        ServiceItem("AEPS",         Icons.Default.Fingerprint),
-        ServiceItem("Micro ATM",    Icons.Default.Atm),
-        ServiceItem("Aadhar Pay",   Icons.Default.Pin),
-        ServiceItem("Bill Payment", Icons.AutoMirrored.Filled.ReceiptLong),
-        ServiceItem("Recharge",     Icons.Default.PhoneAndroid),
-        ServiceItem("Airtel CMS",   Icons.Default.Payments),
-        ServiceItem("Broadband",    Icons.Default.Router),
-        ServiceItem("History",      Icons.Default.History),
-        ServiceItem("Investments",  Icons.AutoMirrored.Filled.TrendingUp),
-        ServiceItem("Insurance",    Icons.Default.Shield),
-        ServiceItem("Loans",        Icons.Default.CreditCard),
-        ServiceItem("UPI",          Icons.Default.QrCode),
-        ServiceItem("Settings",     Icons.Default.Settings),
-        ServiceItem("Profile",      Icons.Default.Person),
-    )
-
-    val bannerSlides = listOf(
-        BannerSlide("Cashback Offer",    "Get 10% back on bill payments", Color(0xFF1565C0)),
-        BannerSlide("Send Money Free",   "Zero fee transfers this week",  Color(0xFF2E7D32)),
-        BannerSlide("New: UPI Autopay",  "Set up recurring payments",     Color(0xFF6A1B9A)),
-    )
+fun MainHomeContent(
+    onMenuClick:    () -> Unit       = {},
+    onLogout:       () -> Unit       = {},
+    onServiceClick: (String) -> Unit = {}
+) {
+    val colorScheme = MaterialTheme.colorScheme
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .background(colorScheme.background)
     ) {
-        WalletBalanceCard(balance = "₹932.95")
+        MainHomeTopBar(title = "Home", onMenuClick = onMenuClick, onLogout = onLogout)
 
-        Text(
-            text = "Offers",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = NavyDark
-        )
-
-        Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            bannerSlides.forEach { slide ->
-                Card(
-                    modifier = Modifier.width(280.dp).height(100.dp),
-                    colors = CardDefaults.cardColors(containerColor = slide.color),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(slide.title, color = Color.White, fontWeight = FontWeight.Bold)
-                        Text(slide.subtitle, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
-                    }
+            MainWalletBalanceCard(balance = "₹932.95")
+            MainBannerSlider(slides = bannerSlides)
+
+            Text(
+                text       = "Services",
+                style      = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color      = colorScheme.onBackground
+            )
+
+            ServiceGrid(items = serviceItems, onServiceClick = onServiceClick)
+
+            Spacer(Modifier.height(16.dp))
+        }
+    }
+}
+
+
+// ─────────────────────────────────────────────
+// TOP BAR
+// ─────────────────────────────────────────────
+
+@Composable
+fun MainHomeTopBar(
+    title:       String,
+    onMenuClick: () -> Unit,
+    onLogout:    () -> Unit = {}
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(55.dp)
+            .background(AppColors.NavyAlpha)
+            .padding(horizontal = 12.dp),
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        IconButton(onClick = onMenuClick) {
+            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.White)
+        }
+        Text(
+            text       = title,
+            color      = Color.White,
+            fontSize   = 20.sp,
+            fontWeight = FontWeight.Bold,
+            modifier   = Modifier.padding(start = 8.dp)
+        )
+        Spacer(Modifier.weight(1f))
+        IconButton(onClick = {}) {
+            Icon(Icons.Default.QrCodeScanner, "QR", tint = Color.White)
+        }
+        IconButton(onClick = {}) {
+            Icon(Icons.Default.Notifications, "Notifications", tint = Color.White)
+        }
+        IconButton(onClick = onLogout) {
+            Icon(Icons.Default.PowerSettingsNew, "Logout", tint = AppColors.PowerRed)
+        }
+        IconButton(onClick = {}) {
+            Icon(Icons.Default.MoreVert, "More", tint = Color.White)
+        }
+    }
+}
+
+
+// ─────────────────────────────────────────────
+// WALLET BALANCE CARD
+// ─────────────────────────────────────────────
+
+@Composable
+fun MainWalletBalanceCard(balance: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape    = RoundedCornerShape(16.dp),
+        colors   = CardDefaults.cardColors(containerColor = Color.Transparent)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.horizontalGradient(listOf(AppColors.NavyDark, AppColors.NavyLight)),
+                    shape = RoundedCornerShape(16.dp)
+                )
+                .padding(20.dp)
+        ) {
+            Column {
+                Text("Wallet Balance",
+                    color = Color.White.copy(alpha = 0.8f),
+                    style = MaterialTheme.typography.labelLarge)
+                Spacer(Modifier.height(4.dp))
+                Text(balance,
+                    color      = Color.White,
+                    style      = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+
+// ─────────────────────────────────────────────
+// BANNER SLIDER
+// ─────────────────────────────────────────────
+
+@Composable
+fun MainBannerSlider(slides: List<BannerSlide>) {
+    val pagerState = rememberPagerState(pageCount = { slides.size })
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(2000)
+            pagerState.animateScrollToPage((pagerState.currentPage + 1) % slides.size)
+        }
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        HorizontalPager(
+            state    = pagerState,
+            modifier = Modifier.fillMaxWidth().height(120.dp).clip(RoundedCornerShape(20.dp))
+        ) { page ->
+            val slide = slides[page]
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.horizontalGradient(listOf(slide.color, slide.color.copy(alpha = 0.7f)))
+                    )
+                    .padding(20.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Column {
+                    Text(slide.title,    color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    Text(slide.subtitle, color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
-
-        Text(
-            text = "Services",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = NavyDark
-        )
-
-        ServiceGrid(items = serviceItems)
-        
-        Spacer(modifier = Modifier.height(20.dp))
+        Row(
+            modifier              = Modifier.align(Alignment.CenterHorizontally),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            repeat(slides.size) { index ->
+                val isSelected = pagerState.currentPage == index
+                Box(
+                    modifier = Modifier
+                        .size(if (isSelected) 20.dp else 6.dp, 6.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(if (isSelected) AppColors.NavyDark else MaterialTheme.colorScheme.outline)
+                )
+            }
+        }
     }
+}
+
+
+// ─────────────────────────────────────────────
+// SERVICE GRID
+// ─────────────────────────────────────────────
+
+@Composable
+fun ServiceGrid(
+    items:          List<ServiceItem>,
+    onServiceClick: (String) -> Unit = {}
+) {
+    Card(
+        modifier  = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        colors    = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape     = RoundedCornerShape(24.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            items.chunked(4).forEach { row ->
+                Row(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    row.forEach { item ->
+                        ServiceGridItem(
+                            item     = item,
+                            modifier = Modifier.weight(1f),
+                            onClick  = { onServiceClick(item.title) }
+                        )
+                    }
+                    repeat(4 - row.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+        }
+    }
+}
+
+
+// ─────────────────────────────────────────────
+// SERVICE GRID ITEM
+// ─────────────────────────────────────────────
+
+@Composable
+fun ServiceGridItem(
+    item:     ServiceItem,
+    modifier: Modifier   = Modifier,
+    onClick:  () -> Unit = {}
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onClick() }
+            .padding(top = 8.dp, bottom = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Surface(
+            shape    = RoundedCornerShape(16.dp),
+            color    = AppColors.NavyDark.copy(alpha = 0.08f),
+            modifier = Modifier.size(56.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Icon(
+                    imageVector        = item.icon,
+                    contentDescription = item.title,
+                    modifier           = Modifier.size(28.dp),
+                    tint               = AppColors.NavyDark
+                )
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text      = item.title,
+            style     = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = FontWeight.Medium,
+                lineHeight = 14.sp
+            ),
+            color     = Color.DarkGray,
+            textAlign = TextAlign.Center,
+            maxLines  = 2,
+            modifier  = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
+        )
+    }
+}
+
+
+// ─────────────────────────────────────────────
+// DRAWER CONTENT
+// ─────────────────────────────────────────────
+
+@Composable
+fun MainHomeDrawerContent(onClose: () -> Unit = {}) {
+    val colorScheme = MaterialTheme.colorScheme
+    ModalDrawerSheet(drawerContainerColor = colorScheme.surface) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+                .background(Brush.verticalGradient(listOf(AppColors.NavyDark, AppColors.NavyLight)))
+                .padding(20.dp),
+            contentAlignment = Alignment.BottomStart
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Surface(shape = CircleShape, color = Color.White.copy(alpha = 0.2f), modifier = Modifier.size(56.dp)) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Icon(Icons.Default.Person, null, tint = Color.White, modifier = Modifier.size(32.dp))
+                    }
+                }
+                Text("Jane Doe",         color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                Text("jane@example.com", color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        listOf(
+            Triple(Icons.Default.Home,           "Home",       true),
+            Triple(Icons.Default.AccountBalance, "My Account", false),
+            Triple(Icons.Default.History,        "History",    false),
+            Triple(Icons.Default.Receipt,        "Statements", false),
+            Triple(Icons.AutoMirrored.Filled.Help, "Support",    false),
+            Triple(Icons.Default.Settings,       "Settings",   false),
+        ).forEach { (icon, label, selected) ->
+            NavigationDrawerItem(
+                icon     = { Icon(icon, null) },
+                label    = { Text(label) },
+                selected = selected,
+                onClick  = { onClose() },
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+            )
+        }
+        Spacer(Modifier.weight(1f))
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+        Spacer(Modifier.height(8.dp))
+        NavigationDrawerItem(
+            icon     = { Icon(Icons.Default.PowerSettingsNew, null, tint = AppColors.PowerRed) },
+            label    = { Text("Logout", color = AppColors.PowerRed) },
+            selected = false,
+            onClick  = { onClose() },
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+        )
+        Spacer(Modifier.height(16.dp))
+    }
+}
+
+
+// ─────────────────────────────────────────────
+// PREVIEWS
+// ─────────────────────────────────────────────
+
+@Preview(name = "Home – Light", showBackground = true)
+@Preview(name = "Home – Dark",  showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+fun MainPreviewHomeContent() {
+    MaterialTheme { MainHomeContent() }
+}
+
+@Preview(name = "Drawer – Light", showBackground = true)
+@Composable
+fun MainPreviewHomeDrawer() {
+    MaterialTheme { MainHomeDrawerContent() }
+}
+
+@Preview(name = "Top Bar", showBackground = true, backgroundColor = 0xFF0B0E71)
+@Composable
+fun MainPreviewHomeTopBar() {
+    MaterialTheme { MainHomeTopBar(title = "Home", onMenuClick = {}) }
 }

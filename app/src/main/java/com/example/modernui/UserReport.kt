@@ -59,9 +59,9 @@ fun ReportScreen() {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("Top Categories", fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(12.dp))
-                CategoryItem("Food & Drinks", "₹4,200", 0.4f, Color(0xFFFFB74D))
-                CategoryItem("Shopping", "₹3,100", 0.3f, Color(0xFF64B5F6))
-                CategoryItem("Transport", "₹1,800", 0.2f, Color(0xFF81C784))
+                CategoryItem("Recharge Report", "₹4,200", 0.4f, Color(0xFFFFB74D))
+                CategoryItem("DMT Reprot", "₹3,100", 0.3f, Color(0xFF64B5F6))
+                CategoryItem("AEPS Report", "₹1,800", 0.2f, Color(0xFF81C784))
             }
         }
     }

@@ -1,6 +1,5 @@
 package com.example.modernui
 
-import android.widget.Toast
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
@@ -18,7 +17,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
@@ -28,7 +26,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import kotlinx.coroutines.launch
 import kotlin.math.sin
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,13 +35,11 @@ fun FintechLoginScreenM3(
     onLoginSuccess: () -> Unit,
     onRegisterClick: () -> Unit
 ) {
-    val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    val scope = rememberCoroutineScope()
     val uiState by viewModel.state.collectAsState()
 
-    var email by rememberSaveable { mutableStateOf("") }
+    var number by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var isPasswordVisible by rememberSaveable { mutableStateOf(false) }
     var acceptTerms by rememberSaveable { mutableStateOf(false) }
@@ -95,8 +90,8 @@ fun FintechLoginScreenM3(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it },
+                        value = number,
+                        onValueChange = { if (it.length <= 10) number = it },
                         label = { Text("User ID") },
                         leadingIcon = { Icon(Icons.Default.PermIdentity, null) },
                         modifier = Modifier.fillMaxWidth(),
@@ -117,7 +112,7 @@ fun FintechLoginScreenM3(
                         leadingIcon = { Icon(Icons.Default.Lock, null) },
                         trailingIcon = {
                             IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
-                                Icon(if (isPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility, null)
+                                     Icon(if (isPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility, null)
                             }
                         },
                         visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -158,9 +153,9 @@ fun FintechLoginScreenM3(
 
                     Button(
                         onClick = {
-                            viewModel.performLogin( email, password)
+                            viewModel.performLogin( number, password)
                         },
-                        enabled = email.isNotEmpty() && password.length >= 6 && acceptTerms && uiState !is UiState.Loading,
+                        enabled = number.isNotEmpty() && password.length >= 6 && acceptTerms && uiState !is UiState.Loading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
