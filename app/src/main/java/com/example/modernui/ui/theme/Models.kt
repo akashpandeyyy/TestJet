@@ -1,11 +1,12 @@
-package com.example.modernui
+package com.example.modernui.ui.theme
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 
 // Shared Data Models
-data class ServiceItem(val title: String, val icon: ImageVector)
 data class BannerSlide(val title: String, val subtitle: String, val color: Color)
+
+data class ServiceItem(val title: String, val icon: ImageVector)
 
 // Shared Branding Colors
 object AppColors {

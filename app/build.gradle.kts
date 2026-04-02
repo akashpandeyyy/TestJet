@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "com.example.modernui"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.modernui"
@@ -91,6 +91,10 @@ dependencies {
     implementation(libs.androidx.compose.ui.unit)
     implementation(libs.firebase.firestore)
     implementation(libs.ads.mobile.sdk)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.material)
+    implementation(libs.androidx.activity)
+    implementation(libs.androidx.constraintlayout)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.datastore.preferences)
 

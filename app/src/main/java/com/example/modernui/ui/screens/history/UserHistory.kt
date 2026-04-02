@@ -1,6 +1,7 @@
-package com.example.modernui
+package com.example.modernui.ui.screens.history
 
 import android.content.res.Configuration
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,25 +12,34 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.modernui.Api.LoginData
 import com.example.modernui.Api.MyUserData
 import com.example.modernui.Api.UserResponse
+import com.example.modernui.ui.screens.login.UiState
+import com.example.modernui.ui.screens.login.UserViewModel
+import com.example.modernui.ui.theme.AppColors
 
 @Composable
 fun HistoryScreen(
-    viewModel: UserViewModel = hiltViewModel()
+    viewModel: UserViewModel = hiltViewModel(),
+    onMenuClick: () -> Unit = {}
 ) {
     val uiState by viewModel.state.collectAsState()
-    HistoryContent(uiState = uiState)
+    HistoryContent(uiState = uiState, onMenuClick = onMenuClick)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HistoryContent(uiState: UiState) {
+fun HistoryContent(
+    uiState: UiState,
+    onMenuClick: () -> Unit = {}
+) {
     val colorScheme = MaterialTheme.colorScheme
 
     data class TxItem(
@@ -65,6 +75,32 @@ fun HistoryContent(uiState: UiState) {
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
+        // --- HEADER ---
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(55.dp)
+                .background(AppColors.NavyAlpha)
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            IconButton(onClick = onMenuClick) {
+                Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.White)
+            }
+            Text(
+                text = "History",
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+            Spacer(Modifier.weight(1f))
+            IconButton(onClick = {}) {
+                Icon(Icons.Default.Notifications, "Notifications", tint = Color.White)
+            }
+        }
+
         // Filter chips
         Row(
             modifier = Modifier

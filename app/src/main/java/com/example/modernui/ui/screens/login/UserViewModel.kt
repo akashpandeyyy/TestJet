@@ -1,4 +1,4 @@
-package com.example.modernui
+package com.example.modernui.ui.screens.login
 
 import android.content.Context
 import androidx.lifecycle.ViewModel

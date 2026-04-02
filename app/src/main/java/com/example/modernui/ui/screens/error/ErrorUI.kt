@@ -1,4 +1,5 @@
-package com.example.modernui
+
+package com.example.modernui.ui.screens.error
 
 
 import androidx.compose.animation.*
@@ -15,13 +16,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 
 // ─────────────────────────────────────────────
 // 1. API Error Model
@@ -96,10 +99,10 @@ object ApiErrorMapper {
 
     fun fromException(e: Exception): ApiError {
         return when {
-            e is java.net.UnknownHostException ||
-                    e is java.net.ConnectException -> ApiError.NetworkError()
+            e is UnknownHostException ||
+                    e is ConnectException -> ApiError.NetworkError()
 
-            e is java.net.SocketTimeoutException -> ApiError.TimeoutError()
+            e is SocketTimeoutException -> ApiError.TimeoutError()
 
             else -> ApiError.UnknownError(message = e.localizedMessage ?: "Unknown error.")
         }

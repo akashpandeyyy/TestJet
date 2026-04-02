@@ -1,4 +1,4 @@
-package com.example.modernui
+package com.example.modernui.ui.screens.home
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
@@ -28,6 +28,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.modernui.ui.theme.AppColors
+import com.example.modernui.ui.theme.BannerSlide
+import com.example.modernui.ui.theme.ServiceItem
 import kotlinx.coroutines.delay
 
 // ─────────────────────────────────────────────
@@ -39,7 +42,7 @@ private val serviceItems = listOf(
     ServiceItem("Cash Deposit",      Icons.Default.AccountBalance),
     ServiceItem("AEPS2",             Icons.Default.Fingerprint),
     ServiceItem("Aadhar Pay",        Icons.Default.Pin),
-    ServiceItem("Airtel DMT",        Icons.AutoMirrored.Filled.SendToMobile),
+    ServiceItem("Airtel DMT", Icons.AutoMirrored.Filled.SendToMobile),
     ServiceItem("Jio DMT",           Icons.AutoMirrored.Filled.SendToMobile),
     ServiceItem("NSDL Pan Apply",    Icons.Default.Badge),
     ServiceItem("Booking Insurance", Icons.Default.Security),
@@ -52,7 +55,7 @@ private val serviceItems = listOf(
 )
 
 private val bannerSlides = listOf(
-    BannerSlide("Cashback Offer",   "Get 10% back on bill payments", Color(0xFF1565C0)),
+    BannerSlide("Cashback Offer", "Get 10% back on bill payments", Color(0xFF1565C0)),
     BannerSlide("Send Money Free",  "Zero fee transfers this week",  Color(0xFF2E7D32)),
     BannerSlide("New: UPI Autopay", "Set up recurring payments",     Color(0xFF6A1B9A)),
 )
@@ -94,7 +97,7 @@ fun MainHomeContent(
                 color      = colorScheme.onBackground
             )
 
-            ServiceGrid(items = serviceItems, onServiceClick = onServiceClick)
+            MainServiceGrid(items = serviceItems, onServiceClick = onServiceClick)
 
             Spacer(Modifier.height(16.dp))
         }
@@ -132,17 +135,9 @@ fun MainHomeTopBar(
             modifier   = Modifier.padding(start = 8.dp)
         )
         Spacer(Modifier.weight(1f))
-        IconButton(onClick = {}) {
-            Icon(Icons.Default.QrCodeScanner, "QR", tint = Color.White)
-        }
+
         IconButton(onClick = {}) {
             Icon(Icons.Default.Notifications, "Notifications", tint = Color.White)
-        }
-        IconButton(onClick = onLogout) {
-            Icon(Icons.Default.PowerSettingsNew, "Logout", tint = AppColors.PowerRed)
-        }
-        IconButton(onClick = {}) {
-            Icon(Icons.Default.MoreVert, "More", tint = Color.White)
         }
     }
 }
@@ -240,7 +235,7 @@ fun MainBannerSlider(slides: List<BannerSlide>) {
 // ─────────────────────────────────────────────
 
 @Composable
-fun ServiceGrid(
+fun MainServiceGrid(
     items:          List<ServiceItem>,
     onServiceClick: (String) -> Unit = {}
 ) {
@@ -260,7 +255,7 @@ fun ServiceGrid(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     row.forEach { item ->
-                        ServiceGridItem(
+                        MainServiceGridItem(
                             item     = item,
                             modifier = Modifier.weight(1f),
                             onClick  = { onServiceClick(item.title) }
@@ -279,7 +274,7 @@ fun ServiceGrid(
 // ─────────────────────────────────────────────
 
 @Composable
-fun ServiceGridItem(
+fun MainServiceGridItem(
     item:     ServiceItem,
     modifier: Modifier   = Modifier,
     onClick:  () -> Unit = {}
@@ -352,9 +347,6 @@ fun MainHomeDrawerContent(onClose: () -> Unit = {}) {
         listOf(
             Triple(Icons.Default.Home,           "Home",       true),
             Triple(Icons.Default.AccountBalance, "My Account", false),
-            Triple(Icons.Default.History,        "History",    false),
-            Triple(Icons.Default.Receipt,        "Statements", false),
-            Triple(Icons.AutoMirrored.Filled.Help, "Support",    false),
             Triple(Icons.Default.Settings,       "Settings",   false),
         ).forEach { (icon, label, selected) ->
             NavigationDrawerItem(

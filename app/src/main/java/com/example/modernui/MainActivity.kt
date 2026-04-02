@@ -6,8 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.example.modernui.ui.theme.ModernUITheme
 import dagger.hilt.android.AndroidEntryPoint
-import android.provider.Settings
-import android.content.Context
+import com.example.modernui.ui.screens.login.AppNavigation
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {

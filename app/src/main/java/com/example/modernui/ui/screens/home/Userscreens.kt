@@ -1,4 +1,4 @@
-package com.example.modernui
+package com.example.modernui.ui.screens.home
 
 import android.content.res.Configuration
 import androidx.compose.animation.core.*
@@ -33,6 +33,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.modernui.ui.theme.BannerSlide
+import com.example.modernui.ui.theme.ServiceItem
 import kotlinx.coroutines.delay
 
 // ─────────────────────────────────────────────
@@ -50,7 +52,7 @@ private val PowerRed   = Color(0xFF8B0000)
 // ─────────────────────────────────────────────
 
 private val serviceItems = listOf(
-    ServiceItem("AEPS",              Icons.Default.Fingerprint),
+    ServiceItem("AEPS", Icons.Default.Fingerprint),
     ServiceItem("Cash Deposit",      Icons.Default.AccountBalance),
     ServiceItem("AEPS2",             Icons.Default.Fingerprint),
     ServiceItem("Aadhar Pay",        Icons.Default.Pin),
@@ -67,7 +69,7 @@ private val serviceItems = listOf(
 )
 
 private val bannerSlides = listOf(
-    BannerSlide("Cashback Offer",   "Get 10% back on bill payments", Color(0xFF1565C0)),
+    BannerSlide("Cashback Offer", "Get 10% back on bill payments", Color(0xFF1565C0)),
     BannerSlide("Send Money Free",  "Zero fee transfers this week",  Color(0xFF2E7D32)),
     BannerSlide("New: UPI Autopay", "Set up recurring payments",     Color(0xFF6A1B9A)),
 )
@@ -79,8 +81,9 @@ private val bannerSlides = listOf(
 
 @Composable
 fun HomeContent(
-    onMenuClick: () -> Unit = {},
-    onLogout:    () -> Unit = {}
+    onMenuClick:    () -> Unit       = {},
+    onLogout:       () -> Unit       = {},
+    onServiceClick: (String) -> Unit = {}
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -122,7 +125,7 @@ fun HomeContent(
 
             // 4-column service grid
             // Not using LazyVerticalGrid inside scroll — fixed height grid instead
-            ServiceGrid(items = serviceItems)
+            ServiceGrid(items = serviceItems, onServiceClick = onServiceClick)
 
             Spacer(Modifier.height(16.dp))
         }
@@ -237,7 +240,10 @@ fun BannerSlider(slides: List<BannerSlide>) {
 // ─────────────────────────────────────────────
 
 @Composable
-fun ServiceGrid(items: List<ServiceItem>) {
+fun ServiceGrid(
+    items:          List<ServiceItem>,
+    onServiceClick: (String) -> Unit = {}
+) {
     // We'll use simple Rows since LazyVerticalGrid doesn't play well with VerticalScroll
     Card(
         modifier  = Modifier.fillMaxWidth().padding(vertical = 8.dp),
@@ -257,7 +263,8 @@ fun ServiceGrid(items: List<ServiceItem>) {
                     row.forEach { item ->
                         ServiceGridItem(
                             item     = item,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            onClick  = { onServiceClick(item.title) }
                         )
                     }
                     // Fill empty slots
@@ -273,12 +280,13 @@ fun ServiceGrid(items: List<ServiceItem>) {
 @Composable
 private fun ServiceGridItem(
     item:     ServiceItem,
-    modifier: Modifier = Modifier
+    modifier: Modifier   = Modifier,
+    onClick:  () -> Unit = {}
 ) {
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
-            .clickable { /* Handle click */ }
+            .clickable { onClick() }
             .padding(top = 8.dp, bottom = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -354,13 +362,8 @@ fun HomeDrawerContent(onClose: () -> Unit = {}) {
         // Items
         Spacer(Modifier.height(12.dp))
         DrawerItem(Icons.Default.Home,      "Dashboard", true)
-        DrawerItem(Icons.Default.History,   "Transaction History")
-        DrawerItem(Icons.Default.Wallet,    "Wallet Settings")
         DrawerItem(Icons.Default.AccountCircle, "Profile")
-
         HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp, horizontal = 16.dp), thickness = 0.5.dp)
-
-        DrawerItem(Icons.Default.Settings,  "App Settings")
         DrawerItem(Icons.AutoMirrored.Filled.Help,      "Support & Help")
         DrawerItem(Icons.AutoMirrored.Filled.Logout,    "Logout", textColor = PowerRed)
     }

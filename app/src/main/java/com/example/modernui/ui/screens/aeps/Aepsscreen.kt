@@ -1,4 +1,4 @@
-package com.example.modernui.ui.screens
+package com.example.modernui.ui.screens.aeps
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
@@ -7,6 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,9 +18,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.modernui.ui.components.*
+import com.example.modernui.ui.screens.cashdeposite.DeviceSelectionSheet
+import com.example.modernui.ui.screens.cashdeposite.DeviceStatusBar
+import com.example.modernui.ui.screens.cashdeposite.FingerprintDevice
+import com.example.modernui.ui.screens.cashdeposite.SelectedDeviceCard
+import com.example.modernui.ui.theme.AppColors
 import com.example.modernui.ui.theme.FintechColors
 
+// --- DEVICE DATA ---
+private val fingerprintDevices = listOf(
+    FingerprintDevice("face_scan", "Face Scan", "Face", "Generic", false),
+    FingerprintDevice("mantra_mfs110", "Mantra L1", "MFS110", "Mantra Softech", false),
+    FingerprintDevice("mantra_iris", "Mantra IRIS", "MIS100V2", "Mantra Softech", false),
+    FingerprintDevice("morpho_l1", "Morpho - L1", "MSO 1300 E3", "IDEMIA (Morpho)", false)
+)
 
 @Composable
 fun AepsScreen(
@@ -33,6 +47,9 @@ fun AepsScreen(
     var amount          by remember { mutableStateOf("") }
     var selectedBank    by remember { mutableStateOf("") }
     var selectedTxnType by remember { mutableStateOf("") }
+
+    var selectedDevice  by remember { mutableStateOf(fingerprintDevices[0].id) }
+    var showDeviceSheet by remember { mutableStateOf(false) }
 
     // ── Validation ────────────────────────────
     val aadhaarError = aadhaarNumber.isNotEmpty() && aadhaarNumber.length != 12
@@ -55,13 +72,54 @@ fun AepsScreen(
     )
     val needsAmount = selectedTxnType == "Cash Withdrawal" || selectedTxnType == "Cash Deposit"
 
+    val selectedDeviceObj = fingerprintDevices.find { it.id == selectedDevice }
+
+    if (showDeviceSheet) {
+        DeviceSelectionSheet(
+            devices          = fingerprintDevices,
+            selectedDeviceId = selectedDevice,
+            onDeviceSelected = { device ->
+                selectedDevice  = device.id
+                showDeviceSheet = false
+            },
+            onDismiss = { showDeviceSheet = false }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(colorScheme.background)
+            .systemBarsPadding() // This implements the edge-to-edge padding
     ) {
-        // ── Top bar ───────────────────────────
-        DetailTopBar(title = "AEPS", onBackClick = onBackClick)
+        // ── Header ────────────────────────────
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(55.dp)
+                .background(AppColors.NavyAlpha)
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            IconButton(onClick = onBackClick) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+            }
+            Text(
+                text = "AEPS",
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+            Spacer(Modifier.weight(1f))
+            IconButton(onClick = {}) {
+                Icon(Icons.Default.Notifications, "Notifications", tint = Color.White)
+            }
+            IconButton(onClick = {}) {
+                Icon(Icons.Default.MoreVert, "More", tint = Color.White)
+            }
+        }
 
         Column(
             modifier = Modifier
@@ -194,6 +252,32 @@ fun AepsScreen(
                             }
                         }
                     }
+                }
+            }
+
+            // ── Fingerprint Device ────────────
+            SectionCard(title = "Fingerprint Device", icon = Icons.Default.Fingerprint) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    selectedDeviceObj?.let { device ->
+                        SelectedDeviceCard(
+                            device  = device,
+                            onClick = { showDeviceSheet = true }
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick  = { showDeviceSheet = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape    = RoundedCornerShape(12.dp),
+                        colors   = ButtonDefaults.outlinedButtonColors(contentColor = FintechColors.NavyDark),
+                        border   = androidx.compose.foundation.BorderStroke(1.dp, FintechColors.NavyDark.copy(alpha = 0.5f))
+                    ) {
+                        Icon(Icons.Default.SwapHoriz, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Change Device", fontWeight = FontWeight.Medium)
+                    }
+
+                    DeviceStatusBar(device = selectedDeviceObj)
                 }
             }
 

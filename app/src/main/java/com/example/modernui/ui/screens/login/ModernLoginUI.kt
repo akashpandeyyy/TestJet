@@ -1,4 +1,4 @@
-package com.example.modernui
+package com.example.modernui.ui.screens.login
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
