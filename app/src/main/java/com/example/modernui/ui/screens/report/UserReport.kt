@@ -15,9 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.modernui.ui.theme.AppColors
+import com.example.modernui.ui.theme.ModernUITheme
 
 @Composable
 fun ReportScreen(
@@ -122,6 +124,27 @@ fun CategoryItem(name: String, amount: String, progress: Float, color: Color) {
             color = color,
             trackColor = color.copy(alpha = 0.2f),
             strokeCap = StrokeCap.Round
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ReportScreenPreview() {
+    ModernUITheme {
+        ReportScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun CategoryItemPreview() {
+    ModernUITheme {
+        CategoryItem(
+            name = "Sample Category",
+            amount = "₹1,234",
+            progress = 0.6f,
+            color = Color.Blue
         )
     }
 }
