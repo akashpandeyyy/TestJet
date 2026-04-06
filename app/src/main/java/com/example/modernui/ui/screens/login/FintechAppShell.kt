@@ -4,8 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.FileCopy
@@ -30,7 +29,21 @@ import com.example.modernui.ui.screens.report.ReportScreen
 import com.example.modernui.ui.screens.wallet.WalletScreen
 import com.example.modernui.ui.screens.dmt.DmtScreen
 import com.example.modernui.ui.screens.mtb.MoveToBankScreen
+import com.example.modernui.ui.screens.bbps.BbpsScreen
+import com.example.modernui.ui.screens.bbps.BookingInsuranceScreen
+import com.example.modernui.ui.screens.cms.AirtelCmsScreen
+import com.example.modernui.ui.screens.cms.InsuranceDetailScreen
+import com.example.modernui.ui.screens.pan.NsdlPanApplyScreen
+import com.example.modernui.ui.screens.aeps.AepsViewModel
+import com.example.modernui.ui.screens.common.TwoFaConfig
+import com.example.modernui.ui.screens.common.TwoFaStep
+import com.example.modernui.ui.screens.common.TwoFactorAuthScreen
 import kotlinx.coroutines.launch
+
+
+
+
+
 
 // ─────────────────────────────────────────────
 // ROUTE CONSTANTS
@@ -44,7 +57,14 @@ object Routes {
     const val AADHAAR_PAY  = "aadhaar_pay"
     const val DMT_AIRTEL   = "dmt_airtel"
     const val DMT_JIO      = "dmt_jio"
-    const val MOVE_TO_BANK = "move_to_bank"
+    const val MOVE_TO_BANK      = "move_to_bank"
+    const val BBPS             = "bbps"
+    const val BOOKING_INSURANCE = "booking_insurance"
+    const val NSDL_PAN         = "nsdl_pan"
+    const val UTI_PAN          = "uti_pan"
+    const val AIRTEL_CMS       = "airtel_cms"
+    const val INSURANCE_DETAIL = "insurance_detail"
+    const val TWO_FA           = "two_fa"
 }
 
 // ─────────────────────────────────────────────
@@ -61,8 +81,15 @@ fun serviceRoute(title: String): String? = when (title) {
     "Aadhar Pay"     -> Routes.AADHAAR_PAY
     "Airtel DMT"     -> Routes.DMT_AIRTEL
     "Jio DMT"        -> Routes.DMT_JIO
-    "Move To Bank"   -> Routes.MOVE_TO_BANK
-    else             -> null
+    "Move To Bank"       -> Routes.MOVE_TO_BANK
+    "BBPS"                -> Routes.BBPS
+    "Booking Insurance"   -> Routes.BOOKING_INSURANCE
+    "NSDL Pan Apply"      -> Routes.NSDL_PAN
+    "UTI PAN Apply"       -> Routes.UTI_PAN
+    "Airtel CMS"          -> Routes.AIRTEL_CMS
+    "Insurance Detail"    -> Routes.INSURANCE_DETAIL
+    else                  -> null
+    // Note: 2FA is used as a wrapper via TwoFaGate, not a direct route tile
 }
 
 
@@ -82,10 +109,19 @@ fun FintechAppShell(
     ) {
 
         composable(Routes.SHELL) {
+            val aepsViewModel: AepsViewModel = hiltViewModel()
             FintechAppShellContent(
                 viewModel      = viewModel,
                 onServiceClick = { title ->
-                    serviceRoute(title)?.let { navController.navigate(it) }
+                    val route = serviceRoute(title)
+                    if (route == Routes.AEPS) {
+                        aepsViewModel.checkAepsStatusAndNavigate(
+                            onNavigateToAeps = { navController.navigate(Routes.AEPS) },
+                            onNavigateTo2FA = { navController.navigate(Routes.TWO_FA) }
+                        )
+                    } else if (route != null) {
+                        navController.navigate(route)
+                    }
                 }
             )
         }
@@ -117,6 +153,66 @@ fun FintechAppShell(
         composable(Routes.MOVE_TO_BANK) {
             MoveToBankScreen(onBackClick = { navController.popBackStack() })
         }
+
+        composable(Routes.BBPS) {
+            BbpsScreen(onBackClick = { navController.popBackStack() })
+        }
+
+        composable(Routes.BOOKING_INSURANCE) {
+            BookingInsuranceScreen(onBackClick = { navController.popBackStack() })
+        }
+
+        // NSDL and UTI both use the same form — UTI can get its own screen later
+        composable(Routes.NSDL_PAN) {
+            NsdlPanApplyScreen(onBackClick = { navController.popBackStack() })
+        }
+
+        composable(Routes.UTI_PAN) {
+            NsdlPanApplyScreen(onBackClick = { navController.popBackStack() })
+        }
+
+        composable(Routes.AIRTEL_CMS) {
+            AirtelCmsScreen(onBackClick = { navController.popBackStack() })
+        }
+
+        composable(Routes.INSURANCE_DETAIL) {
+            InsuranceDetailScreen(onBackClick = { navController.popBackStack() })
+        }
+
+        // ── Universal 2FA screen — standalone route ────────────────
+        composable(Routes.TWO_FA) {
+            TwoFactorAuthScreen(
+                config = TwoFaConfig(
+                    title = "Two-Factor Authentication",
+                    subtitle = "Verify your identity to continue",
+                    serviceName = "AEPS Service",
+                    steps = listOf(TwoFaStep.FACE_VERIFICATION)
+                ),
+                onVerified  = { 
+                    navController.popBackStack() // Go back to shell
+                    navController.navigate(Routes.AEPS) // Then to AEPS
+                },
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        // ── Example: AEPS wrapped behind 2FA gate ──────────────────
+        // Uncomment and use this pattern for any screen that needs 2FA:
+        //
+        // composable("aeps_secure") {
+        //     TwoFaGate(
+        //         config = TwoFaConfig(
+        //             title       = "AEPS Verification",
+        //             subtitle    = "Verify identity before AEPS transaction",
+        //             serviceName = "AEPS",
+        //             serviceIcon = Icons.Default.Face,
+        //             steps       = listOf(TwoFaStep.FACE_VERIFICATION)
+        //         ),
+        //         onCancel = { navController.popBackStack() }
+        //     ) {
+        //         AepsScreen(onBackClick = { navController.popBackStack() })
+        //     }
+        // }
     }
 }
 

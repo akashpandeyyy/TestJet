@@ -1,6 +1,9 @@
 package com.example.modernui.Api
 
 import android.content.Context
+import com.example.modernui.ui.screens.aeps.AepsModel
+import com.example.modernui.ui.screens.aeps.AepsModelResponce
+import com.example.modernui.ui.screens.common.TwoFAresponce
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -21,6 +24,15 @@ class UserRepo @Inject constructor(
     suspend fun validateuserLogin(request: LoginRequest): ValidateUser {
         return apiService.validateuserLogin(request)
     }
+
+    suspend fun validateuserAeps(request: AepsModel): AepsModelResponce {
+        return apiService.validateuserAeps(request)
+    }
+
+    suspend fun checkAepsStatus(): TwoFAresponce {
+        return apiService.checkAepsStatus()
+    }
+
     private fun saveToken(token: String) {
         val sharedPref = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         with(sharedPref.edit()) {
