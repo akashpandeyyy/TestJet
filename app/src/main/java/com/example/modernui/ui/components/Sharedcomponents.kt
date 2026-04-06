@@ -31,31 +31,36 @@ fun HomeTopBar(
     onMenuClick: () -> Unit,
     actions:     @Composable RowScope.() -> Unit = {}
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(55.dp)
-            .background(FintechColors.NavyAlpha)
-            .padding(horizontal = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Surface(
+        color = FintechColors.NavyAlpha,
+        modifier = Modifier.fillMaxWidth()
     ) {
-        IconButton(onClick = onMenuClick) {
-            Icon(
-                Icons.Default.ArrowBack, // replace with Menu icon in your icons import
-                contentDescription = "Menu",
-                tint = Color.White
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .height(55.dp)
+                .padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onMenuClick) {
+                Icon(
+                    Icons.Default.ArrowBack, // replace with Menu icon in your icons import
+                    contentDescription = "Menu",
+                    tint = Color.White
+                )
+            }
+            Text(
+                text       = title,
+                color      = Color.White,
+                fontSize   = 20.sp,
+                fontWeight = FontWeight.Bold,
+                modifier   = Modifier
+                    .padding(start = 4.dp)
+                    .weight(1f)
             )
+            actions()
         }
-        Text(
-            text       = title,
-            color      = Color.White,
-            fontSize   = 20.sp,
-            fontWeight = FontWeight.Bold,
-            modifier   = Modifier
-                .padding(start = 4.dp)
-                .weight(1f)
-        )
-        actions()
     }
 }
 
@@ -69,27 +74,32 @@ fun DetailTopBar(
     onBackClick: () -> Unit,
     actions:     @Composable RowScope.() -> Unit = {}
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(55.dp)
-            .background(FintechColors.NavyAlpha)
-            .padding(horizontal = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Surface(
+        color = FintechColors.NavyAlpha,
+        modifier = Modifier.fillMaxWidth()
     ) {
-        IconButton(onClick = onBackClick) {
-            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .height(55.dp)
+                .padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBackClick) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+            }
+            Text(
+                text       = title,
+                color      = Color.White,
+                fontSize   = 20.sp,
+                fontWeight = FontWeight.Bold,
+                modifier   = Modifier
+                    .padding(start = 4.dp)
+                    .weight(1f)
+            )
+            actions()
         }
-        Text(
-            text       = title,
-            color      = Color.White,
-            fontSize   = 20.sp,
-            fontWeight = FontWeight.Bold,
-            modifier   = Modifier
-                .padding(start = 4.dp)
-                .weight(1f)
-        )
-        actions()
     }
 }
 
@@ -307,7 +317,7 @@ fun NavyHeaderCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape    = RoundedCornerShape(16.dp),
-        colors   = CardDefaults.cardColors(containerColor = Color.Transparent)
+        colors    = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
         Box(
             modifier = Modifier
