@@ -19,6 +19,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.modernui.ui.components.*
 import com.example.modernui.ui.screens.cashdeposite.DeviceSelectionSheet
 import com.example.modernui.ui.screens.cashdeposite.DeviceStatusBar
@@ -37,18 +38,19 @@ private val fingerprintDevices = listOf(
 
 @Composable
 fun AepsScreen(
+    viewModel: AepsViewModel = hiltViewModel(),
     onBackClick: () -> Unit = {}
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val uiState by viewModel.uiState.collectAsState()
 
-    // ── Form state ────────────────────────────
-    var aadhaarNumber   by remember { mutableStateOf("") }
-    var mobileNumber    by remember { mutableStateOf("") }
-    var amount          by remember { mutableStateOf("") }
-    var selectedBank    by remember { mutableStateOf("") }
-    var selectedTxnType by remember { mutableStateOf("") }
+    val aadhaarNumber by viewModel.aadhaarNumber.collectAsState()
+    val mobileNumber by viewModel.mobileNumber.collectAsState()
+    val amount by viewModel.amount.collectAsState()
+    val selectedBank by viewModel.selectedBank.collectAsState()
+    val selectedTxnType by viewModel.selectedTxnType.collectAsState()
+    val selectedDevice by viewModel.selectedDevice.collectAsState()
 
-    var selectedDevice  by remember { mutableStateOf(fingerprintDevices[0].id) }
     var showDeviceSheet by remember { mutableStateOf(false) }
 
     // ── Validation ────────────────────────────
@@ -79,7 +81,7 @@ fun AepsScreen(
             devices          = fingerprintDevices,
             selectedDeviceId = selectedDevice,
             onDeviceSelected = { device ->
-                selectedDevice  = device.id
+                viewModel.onDeviceSelected(device.id)
                 showDeviceSheet = false
             },
             onDismiss = { showDeviceSheet = false }
@@ -90,7 +92,7 @@ fun AepsScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(colorScheme.background)
-            .systemBarsPadding() // This implements the edge-to-edge padding
+            .systemBarsPadding()
     ) {
         // ── Header ────────────────────────────
         Row(
@@ -129,6 +131,20 @@ fun AepsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
+            // Handle UI State
+            when (val state = uiState) {
+                is AepsUiState.Loading -> {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+                is AepsUiState.Error -> {
+                    Text(state.message, color = colorScheme.error, modifier = Modifier.padding(8.dp))
+                }
+                is AepsUiState.Success -> {
+                    // Handle success UI or side effects
+                }
+                else -> {}
+            }
+
             // ── Header banner ─────────────────
             NavyHeaderCard(
                 icon     = Icons.Default.Fingerprint,
@@ -142,7 +158,7 @@ fun AepsScreen(
 
                     NavyOutlinedField(
                         value         = aadhaarNumber,
-                        onValueChange = { if (it.all(Char::isDigit)) aadhaarNumber = it },
+                        onValueChange = { viewModel.onAadhaarChange(it) },
                         label         = "Aadhaar Number *",
                         placeholder   = "Enter 12-digit Aadhaar",
                         leadingIcon   = Icons.Default.CreditCard,
@@ -191,7 +207,7 @@ fun AepsScreen(
 
                     NavyOutlinedField(
                         value         = mobileNumber,
-                        onValueChange = { if (it.all(Char::isDigit)) mobileNumber = it },
+                        onValueChange = { viewModel.onMobileChange(it) },
                         label         = "Mobile Number *",
                         placeholder   = "10-digit mobile number",
                         leadingIcon   = Icons.Default.Phone,
@@ -212,7 +228,7 @@ fun AepsScreen(
                         leadingIcon      = Icons.Default.SwapHoriz,
                         selectedValue    = selectedTxnType,
                         options          = txnTypes,
-                        onOptionSelected = { selectedTxnType = it }
+                        onOptionSelected = { viewModel.onTxnTypeSelected(it) }
                     )
 
                     NavyDropdownField(
@@ -220,14 +236,14 @@ fun AepsScreen(
                         leadingIcon      = Icons.Default.AccountBalance,
                         selectedValue    = selectedBank,
                         options          = banks,
-                        onOptionSelected = { selectedBank = it }
+                        onOptionSelected = { viewModel.onBankSelected(it) }
                     )
 
                     // Amount — only for Withdrawal / Deposit
                     if (needsAmount) {
                         NavyOutlinedField(
                             value         = amount,
-                            onValueChange = { amount = it },
+                            onValueChange = { viewModel.onAmountChange(it) },
                             label         = "Amount (₹) *",
                             placeholder   = "Enter amount",
                             leadingIcon   = Icons.Default.CurrencyRupee,
@@ -241,7 +257,7 @@ fun AepsScreen(
                             listOf("500", "1000", "2000", "5000").forEach { preset ->
                                 FilterChip(
                                     selected = amount == preset,
-                                    onClick  = { amount = preset },
+                                    onClick  = { viewModel.onAmountChange(preset) },
                                     label    = {
                                         Text(
                                             "₹$preset",
@@ -260,80 +276,48 @@ fun AepsScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     selectedDeviceObj?.let { device ->
                         SelectedDeviceCard(
-                            device  = device,
+                            device = device,
                             onClick = { showDeviceSheet = true }
                         )
-                    }
-
-                    OutlinedButton(
-                        onClick  = { showDeviceSheet = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape    = RoundedCornerShape(12.dp),
-                        colors   = ButtonDefaults.outlinedButtonColors(contentColor = FintechColors.NavyDark),
-                        border   = androidx.compose.foundation.BorderStroke(1.dp, FintechColors.NavyDark.copy(alpha = 0.5f))
-                    ) {
-                        Icon(Icons.Default.SwapHoriz, null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("Change Device", fontWeight = FontWeight.Medium)
                     }
 
                     DeviceStatusBar(device = selectedDeviceObj)
                 }
             }
 
-            // ── Biometric notice ──────────────
-            Surface(
-                shape    = RoundedCornerShape(12.dp),
-                color    = FintechColors.SuccessGreenLight,
-                modifier = Modifier.fillMaxWidth()
+            // ── Submit Button ─────────────────
+            Button(
+                onClick = { viewModel.performTransaction() },
+                enabled = isFormValid && uiState !is AepsUiState.Loading,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = FintechColors.NavyDark,
+                    contentColor = Color.White
+                )
             ) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment     = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.Fingerprint, null,
-                        tint     = FintechColors.SuccessGreen,
-                        modifier = Modifier.size(24.dp)
+                if (uiState is AepsUiState.Loading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                } else {
+                    Text(
+                        if (selectedTxnType == "Balance Enquiry") "CHECK BALANCE" else "PROCEED TRANSACTION",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
                     )
-                    Column {
-                        Text(
-                            "Biometric Authentication Required",
-                            style      = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color      = FintechColors.SuccessGreenDark
-                        )
-                        Text(
-                            "Customer fingerprint will be captured on the next step",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = FintechColors.SuccessGreen
-                        )
-                    }
                 }
             }
-
-            // ── Submit button ─────────────────
-            NavyPrimaryButton(
-                text    = "Proceed to Biometric",
-                onClick = { /* navigate to biometric capture */ },
-                enabled = isFormValid,
-                icon    = Icons.Default.Fingerprint
-            )
-
-            Spacer(Modifier.height(8.dp))
+            
+            Spacer(Modifier.height(20.dp))
         }
     }
 }
 
-
-// ─────────────────────────────────────────────
-// PREVIEWS
-// ─────────────────────────────────────────────
-
-@Preview(name = "AEPS – Light", showBackground = true)
-@Preview(name = "AEPS – Dark",  showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(showBackground = true)
 @Composable
 fun PreviewAepsScreen() {
-    MaterialTheme { AepsScreen() }
+    MaterialTheme {
+        AepsScreen(onBackClick = {})
+    }
 }

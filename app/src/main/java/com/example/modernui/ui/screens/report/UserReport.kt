@@ -1,6 +1,7 @@
 package com.example.modernui.ui.screens.report
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,7 +24,8 @@ import com.example.modernui.ui.theme.ModernUITheme
 
 @Composable
 fun ReportScreen(
-    onMenuClick: () -> Unit = {}
+    onMenuClick: () -> Unit = {},
+    onCategoryClick: (String) -> Unit = {}
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -101,9 +103,15 @@ fun ReportScreen(
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Top Categories", fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(12.dp))
-                    CategoryItem("Recharge Report", "₹4,200", 0.4f, Color(0xFFFFB74D))
-                    CategoryItem("DMT Report", "₹3,100", 0.3f, Color(0xFF64B5F6))
-                    CategoryItem("AEPS Report", "₹1,800", 0.2f, Color(0xFF81C784))
+                    CategoryItem("Recharge Report", "₹4,200", 0.4f, Color(0xFFFFB74D)) {
+                        onCategoryClick("Recharge")
+                    }
+                    CategoryItem("DMT Report", "₹3,100", 0.3f, Color(0xFF64B5F6)) {
+                        onCategoryClick("DMT")
+                    }
+                    CategoryItem("AEPS Report", "₹1,800", 0.2f, Color(0xFF81C784)) {
+                        onCategoryClick("AEPS")
+                    }
                 }
             }
         }
@@ -111,8 +119,19 @@ fun ReportScreen(
 }
 
 @Composable
-fun CategoryItem(name: String, amount: String, progress: Float, color: Color) {
-    Column(modifier = Modifier.padding(vertical = 8.dp)) {
+fun CategoryItem(
+    name: String, 
+    amount: String, 
+    progress: Float, 
+    color: Color,
+    onClick: () -> Unit = {}
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 8.dp)
+    ) {
         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
             Text(name, fontSize = 14.sp)
             Text(amount, fontWeight = FontWeight.Bold, fontSize = 14.sp)

@@ -28,17 +28,23 @@ import com.example.modernui.ui.theme.AppColors
 @Composable
 fun HistoryScreen(
     viewModel: UserViewModel = hiltViewModel(),
-    onMenuClick: () -> Unit = {}
+    onMenuClick: () -> Unit = {},
+    initialCategoryFilter: String? = null
 ) {
     val uiState by viewModel.state.collectAsState()
-    HistoryContent(uiState = uiState, onMenuClick = onMenuClick)
+    HistoryContent(
+        uiState = uiState, 
+        onMenuClick = onMenuClick,
+        initialCategoryFilter = initialCategoryFilter
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryContent(
     uiState: UiState,
-    onMenuClick: () -> Unit = {}
+    onMenuClick: () -> Unit = {},
+    initialCategoryFilter: String? = null
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -52,7 +58,9 @@ fun HistoryContent(
 
     val transactions = listOf(
         TxItem("Salary Credit",    "Oct 22, 2023", "+₹50,000.00", true,  "Income"),
+        TxItem("Mobile Recharge",  "Oct 25, 2023", "-₹499.00",    false, "Recharge"),
         TxItem("Grocery Store",    "Oct 24, 2023", "-₹1,200.00",  false, "Food"),
+        TxItem("DTH Recharge",     "Oct 23, 2023", "-₹350.00",    false, "Recharge"),
         TxItem("Netflix",          "Oct 20, 2023", "-₹649.00",    false, "Entertainment"),
         TxItem("Freelance Payment","Oct 18, 2023", "+₹8,500.00",  true,  "Income"),
         TxItem("Electricity Bill", "Oct 15, 2023", "-₹1,840.00",  false, "Utilities"),
@@ -63,13 +71,21 @@ fun HistoryContent(
         TxItem("Interest Credit",  "Sep 30, 2023", "+₹220.00",    true,  "Savings")
     )
 
-    val filterOptions = listOf("All", "Credits", "Debits")
-    var selectedFilter by remember { mutableIntStateOf(0) }
+    val filterOptions = listOf("All", "Credits", "Debits", "Recharge", "DMT", "AEPS")
+    var selectedFilter by remember { mutableStateOf(initialCategoryFilter ?: "All") }
+
+    // If initialCategoryFilter changes, update selectedFilter
+    LaunchedEffect(initialCategoryFilter) {
+        if (initialCategoryFilter != null) {
+            selectedFilter = initialCategoryFilter
+        }
+    }
 
     val filtered = when (selectedFilter) {
-        1 -> transactions.filter { it.isCredit }
-        2 -> transactions.filter { !it.isCredit }
-        else -> transactions
+        "Credits" -> transactions.filter { it.isCredit }
+        "Debits"  -> transactions.filter { !it.isCredit }
+        "All"     -> transactions
+        else      -> transactions.filter { it.category.equals(selectedFilter, ignoreCase = true) }
     }
 
     Column(
@@ -101,18 +117,20 @@ fun HistoryContent(
             }
         }
 
-        // Filter chips
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        // Filter chips - Scrollable
+        ScrollableTabRow(
+            selectedTabIndex = filterOptions.indexOf(selectedFilter).coerceAtLeast(0),
+            edgePadding = 16.dp,
+            containerColor = Color.Transparent,
+            divider = {},
+            indicator = {}
         ) {
-            filterOptions.forEachIndexed { index, label ->
+            filterOptions.forEach { label ->
                 FilterChip(
-                    selected = selectedFilter == index,
-                    onClick = { selectedFilter = index },
-                    label = { Text(label) }
+                    selected = selectedFilter == label,
+                    onClick = { selectedFilter = label },
+                    label = { Text(label) },
+                    modifier = Modifier.padding(horizontal = 4.dp)
                 )
             }
         }
