@@ -1,4 +1,4 @@
-package com.example.modernui.Api
+package com.example.modernui.Api.model
 
 import android.util.Log
 import okhttp3.Interceptor

@@ -1,4 +1,4 @@
-package com.example.modernui.ui.screens.login
+package com.example.modernui.ui.components
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -38,6 +38,7 @@ import com.example.modernui.ui.screens.aeps.AepsViewModel
 import com.example.modernui.ui.screens.common.TwoFaConfig
 import com.example.modernui.ui.screens.common.TwoFaStep
 import com.example.modernui.ui.screens.common.TwoFactorAuthScreen
+import com.example.modernui.ui.screens.login.UserViewModel
 import kotlinx.coroutines.launch
 
 
@@ -188,7 +189,7 @@ fun FintechAppShell(
                     serviceName = "AEPS Service",
                     steps = listOf(TwoFaStep.FACE_VERIFICATION)
                 ),
-                onVerified  = { 
+                onVerified  = {
                     navController.popBackStack() // Go back to shell
                     navController.navigate(Routes.AEPS) // Then to AEPS
                 },
@@ -223,7 +224,7 @@ fun FintechAppShell(
 
 @Composable
 fun FintechAppShellContent(
-    viewModel:      UserViewModel,
+    viewModel: UserViewModel,
     onServiceClick: (String) -> Unit = {}
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
@@ -277,9 +278,9 @@ fun FintechAppShellContent(
                             onMenuClick    = { scope.launch { drawerState.open() } },
                             onServiceClick = onServiceClick
                         )
-                        1 -> WalletScreen(viewModel)
-                        2 -> ReportScreen()
-                        3 -> HistoryScreen(viewModel)
+                        1 -> WalletScreen(onMenuClick = { scope.launch { drawerState.open() } })
+                        2 -> ReportScreen(onMenuClick = { scope.launch { drawerState.open() } })
+                        3 -> HistoryScreen(viewModel = viewModel, onMenuClick = { scope.launch { drawerState.open() } })
                     }
                 }
             }

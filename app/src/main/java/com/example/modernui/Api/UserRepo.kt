@@ -1,9 +1,13 @@
 package com.example.modernui.Api
 
 import android.content.Context
+import com.example.modernui.Api.model.LoginRequest
+import com.example.modernui.Api.model.UserResponse
+import com.example.modernui.Api.model.ValidateUser
 import com.example.modernui.ui.screens.aeps.AepsModel
 import com.example.modernui.ui.screens.aeps.AepsModelResponce
 import com.example.modernui.ui.screens.common.TwoFAresponce
+import com.example.modernui.ui.screens.login.otprequest
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -31,6 +35,11 @@ class UserRepo @Inject constructor(
 
     suspend fun checkAepsStatus(): TwoFAresponce {
         return apiService.checkAepsStatus()
+    }
+
+    // validate user otp
+    suspend fun validateuserotp(request: otprequest): UserResponse {
+        return apiService.validateuserotp(request)
     }
 
     private fun saveToken(token: String) {

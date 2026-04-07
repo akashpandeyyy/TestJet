@@ -15,6 +15,8 @@ object ApiEndpoints {
         const val USER_LOGIN = "login/userLogin"
         const val  USER_ValidateSession = "login/validateSession"
         const val VALIDATE_OTP = "login/validateOtp"
+
+
     }
 
     object Recharge {

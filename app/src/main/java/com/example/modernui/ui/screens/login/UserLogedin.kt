@@ -17,9 +17,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.modernui.Api.LoginData
-import com.example.modernui.Api.MyUserData
-import com.example.modernui.Api.UserResponse
+import com.example.modernui.Api.model.LoginData
+import com.example.modernui.Api.model.MyUserData
+import com.example.modernui.Api.model.UserResponse
 
 @Composable
 fun UserDetailScreenM3(

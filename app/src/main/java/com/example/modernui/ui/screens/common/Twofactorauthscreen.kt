@@ -1,8 +1,10 @@
 package com.example.modernui.ui.screens.common
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
+import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -32,6 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.modernui.ui.components.intentpackage.RdHelper
 import com.example.modernui.ui.theme.FintechColors
 import com.example.modernui.ui.theme.ModernUITheme
 import kotlinx.coroutines.delay
@@ -40,7 +43,11 @@ import kotlinx.coroutines.delay
 // CONFIGURATION DATA CLASS
 // ─────────────────────────────────────────────
 
-enum class TwoFaStep { FACE_VERIFICATION }
+enum class TwoFaStep { 
+    OTP, 
+    BIOMETRIC, 
+    FACE_VERIFICATION 
+}
 
 data class TwoFaConfig(
     val title:         String        = "Two-Factor Authentication",
@@ -83,7 +90,7 @@ fun TwoFactorAuthScreen(
     val faceCaptureLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        val responseData = result.data?.getStringExtra("res_data") ?: ""
+        val responseData = result.data?.getStringExtra(RdHelper.INTENT_EXTRA_RESPONSE) ?: ""
         Log.d("TwoFaScreen", "Face RD Response: $responseData")
 
         if (result.resultCode == Activity.RESULT_OK) {
@@ -149,64 +156,42 @@ fun TwoFactorAuthScreen(
                     TwoFaState.IDLE -> {
                         FaceVerificationPromptCard(
                             onProceed = {
-//                                try {
-//                                    val intent = Intent("in.gov.uidai.rdservice.face.FACE_CAPTURE")
-//                                    intent.setPackage("in.gov.uidai.facerd")
-//
-//                                    // Standard request data for Face RD
-//                                    val requestXml = """
-//                                        <FaceCaptureRequest version="1.0">
-//                                            <TransactionId>${System.currentTimeMillis()}</TransactionId>
-//                                        </FaceCaptureRequest>
-//                                    """.trimIndent()
-//
-//                                    intent.putExtra("request_data", requestXml)
-//
-//                                    faceCaptureLauncher.launch(intent)
-//                                    twoFaState = TwoFaState.VERIFYING
-//                                } catch (e: Exception) {
-//                                    val str: String = e.message.toString()
-//                                    Log.e("TwoFaScreen", "Error launching RD Face Service: $str")
-//                                    Toast.makeText(context, str, Toast.LENGTH_SHORT).show()
-//                                    failMessage = "RD Face Service not found or failed to launch"
-//                                    twoFaState = TwoFaState.FAILED
-//                                }
+                                val packageName = RdHelper.FACE_RD_PACKAGE
+                                val action = RdHelper.FACE_RD_CAPTURE_ACTION
+
                                 try {
-//                                    val intent = Intent("in.gov.uidai.rdservice.face.FACE_CAPTURE")
-//                                    intent.setPackage("in.gov.uidai.facerd")
+                                    val intent = Intent(action)
+                                    intent.setPackage(packageName)
 
-                                    val intent = Intent("in.gov.uidai.rdservice.face.FACE_CAPTURE")
-                                    intent.`package`="in.gov.uidai.facerd"
+                                    // UIDAI hamesha PidOptions mangta hai, simple FaceCaptureRequest nahi
+                                    val pidOptionsXml = """
+                                                    <PidOptions env="P" ver="1.0">
+                                                        <CustOpts>
+                                                            <Param name="purpose" value="auth"/>
+                                                            <Param name="requestAdditionalInfo" value="true"/>
+                                                        </CustOpts>
+                                                        <Opts fCount="" fType="" format="0" iCount="" iType="" pCount="1" pType="1" pidVer="2.0" posh="UNKNOWN" timeout="20000" wadh=""/>
+                                                    </PidOptions>
+                                                """.trimIndent()
 
-// Direct component set karke dekho agar simple setPackage kaam nahi kar raha
-                                    // Standard request data
-                                    // Tip: TransactionId unique hona chahiye, System.currentTimeMillis() works fine.
-                                    val requestXml = """
-        <FaceCaptureRequest version="1.0">
-            <TransactionId>${System.currentTimeMillis()}</TransactionId>
-        </FaceCaptureRequest>
-    """.trimIndent()
+                                    intent.putExtra(RdHelper.INTENT_EXTRA_REQUEST, pidOptionsXml)
 
-                                    intent.putExtra("request", requestXml)
-
-                                    // Launching the intent
                                     faceCaptureLauncher.launch(intent)
                                     twoFaState = TwoFaState.VERIFYING
 
-                                } catch (e: Exception) { // Fixed: Added Exception type
-                                    val str: String = e.message ?: "Unknown Error"
-                                    Log.e("TwoFaScreen", "Error launching RD Face Service: $str", e)
+                                } catch (e: Exception) {
+                                    Log.e("TwoFaScreen", "Error: ${e.message}", e)
 
-                                    // Better User Feedback
-                                    failMessage = if (e is android.content.ActivityNotFoundException) {
-                                        "Install Addhar Face App"
+                                    if (e is android.content.ActivityNotFoundException) {
+                                        Toast.makeText(context, "Face RD not Install. Install it.........", Toast.LENGTH_LONG).show()
+                                        val playStoreIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName"))
+                                        context.startActivity(playStoreIntent)
                                     } else {
-                                        "RD Face Service failed: $str"
+                                        failMessage = "RD Service failed: ${e.message}"
+                                        twoFaState = TwoFaState.FAILED
                                     }
-
-                                    Toast.makeText(context, failMessage, Toast.LENGTH_SHORT).show()
-                                    twoFaState = TwoFaState.FAILED
                                 }
+
                             }
                         )
                     }

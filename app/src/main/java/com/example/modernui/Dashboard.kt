@@ -1,27 +1,20 @@
 package com.example.modernui
 
 import android.content.res.Configuration
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.example.modernui.Api.LoginData
-import com.example.modernui.Api.MyUserData
-import com.example.modernui.Api.UserResponse
+import com.example.modernui.Api.model.LoginData
+import com.example.modernui.Api.model.MyUserData
+import com.example.modernui.Api.model.UserResponse
 import com.example.modernui.ui.screens.login.UiState
 import com.example.modernui.ui.screens.login.UserViewModel
 

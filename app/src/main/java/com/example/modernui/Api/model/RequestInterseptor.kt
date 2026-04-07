@@ -1,4 +1,4 @@
-package com.example.modernui.Api
+package com.example.modernui.Api.model
 
 import android.content.Context
 import android.provider.Settings
@@ -17,10 +17,7 @@ class RequestInterceptor(
         // Fetch token & deviceId from SharedPreferences/DataStore
        val sharedPref = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         val token = sharedPref.getString("auth_token", "") ?: ""
-        val deviceId = Settings.Secure.getString(
-            context.contentResolver,
-            Settings.Secure.ANDROID_ID
-        )
+        val deviceId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
 
         // Attach headers to EVERY request automatically
         val newRequest = originalRequest.newBuilder()

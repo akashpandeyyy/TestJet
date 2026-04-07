@@ -7,6 +7,9 @@
     <!-- Required for Android 11+ to detect and launch Aadhaar Face RD -->
     <queries>
         <package android:name="in.gov.uidai.facerd" />
+        <intent>
+            <action android:name="in.gov.uidai.rdservice.face.FACE_CAPTURE" />
+        </intent>
     </queries>
 
     <application
@@ -18,7 +21,9 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.ModernUI">
+        android:enableOnBackInvokedCallback="true"
+        android:theme="@style/Theme.ModernUI"
+        tools:targetApi="33">
 
         <activity
             android:name=".MainActivity"
