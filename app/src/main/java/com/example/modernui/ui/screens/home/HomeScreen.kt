@@ -23,11 +23,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.modernui.ui.theme.AppColors
 import com.example.modernui.ui.theme.BannerSlide
 import com.example.modernui.ui.theme.ServiceItem
@@ -69,9 +71,14 @@ private val bannerSlides = listOf(
 fun MainHomeContent(
     onMenuClick:    () -> Unit       = {},
     onLogout:       () -> Unit       = {},
-    onServiceClick: (String) -> Unit = {}
+    onServiceClick: (String) -> Unit = {},
+    viewModel: HomeViewModel = hiltViewModel()
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val balance by viewModel.balance.collectAsState()
+    val aepsBalance by viewModel.aepsBalance.collectAsState()
+    val walletBalance by viewModel.walletBalance.collectAsState()
+    val userName by viewModel.userName.collectAsState()
 
     Column(
         modifier = Modifier
@@ -87,7 +94,11 @@ fun MainHomeContent(
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            MainWalletBalanceCard(balance = "₹932.95")
+            MainWalletBalanceCard(
+                balance = balance,
+                aepsBalance = aepsBalance,
+                walletBalance = walletBalance
+            )
             MainBannerSlider(slides = bannerSlides)
 
             Text(
@@ -148,32 +159,70 @@ fun MainHomeTopBar(
 // ─────────────────────────────────────────────
 
 @Composable
-fun MainWalletBalanceCard(balance: String) {
+fun MainWalletBalanceCard(
+    balance: String,
+    aepsBalance: String = "₹0.00",
+    walletBalance: String = "₹0.00"
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape    = RoundedCornerShape(16.dp),
-        colors   = CardDefaults.cardColors(containerColor = Color.Transparent)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    brush = Brush.horizontalGradient(listOf(AppColors.NavyDark, AppColors.NavyLight)),
-                    shape = RoundedCornerShape(16.dp)
+                    brush = Brush.horizontalGradient(listOf(AppColors.NavyDark, AppColors.NavyLight))
                 )
                 .padding(20.dp)
         ) {
-            Column {
-                Text("Wallet Balance",
-                    color = Color.White.copy(alpha = 0.8f),
-                    style = MaterialTheme.typography.labelLarge)
-                Spacer(Modifier.height(4.dp))
-                Text(balance,
-                    color      = Color.White,
-                    style      = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.Bold)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("Total Balance",
+                        color = Color.White.copy(alpha = 0.8f),
+                        style = MaterialTheme.typography.labelLarge)
+                    Text(balance,
+                        color      = Color.White,
+                        style      = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold)
+                }
+                Icon(
+                    imageVector = Icons.Default.AccountBalanceWallet,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.5f),
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+
+            Spacer(Modifier.height(16.dp))
+            HorizontalDivider(color = Color.White.copy(alpha = 0.2f))
+            Spacer(Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                BalanceItem(label = "Wallet", amount = walletBalance, icon = Icons.Default.Wallet)
+                BalanceItem(label = "AEPS", amount = aepsBalance, icon = Icons.Default.Fingerprint)
             }
         }
+    }
+}
+
+@Composable
+private fun BalanceItem(label: String, amount: String, icon: ImageVector) {
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(14.dp))
+            Spacer(Modifier.width(4.dp))
+            Text(label, color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelSmall)
+        }
+        Text(amount, color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -322,8 +371,13 @@ fun MainServiceGridItem(
 // ─────────────────────────────────────────────
 
 @Composable
-fun MainHomeDrawerContent(onClose: () -> Unit = {}) {
+fun MainHomeDrawerContent(
+    onClose: () -> Unit = {},
+    viewModel: HomeViewModel = hiltViewModel()
+) {
     val colorScheme = MaterialTheme.colorScheme
+    val userName by viewModel.userName.collectAsState()
+
     ModalDrawerSheet(drawerContainerColor = colorScheme.surface) {
         Box(
             modifier = Modifier
@@ -339,7 +393,7 @@ fun MainHomeDrawerContent(onClose: () -> Unit = {}) {
                         Icon(Icons.Default.Person, null, tint = Color.White, modifier = Modifier.size(32.dp))
                     }
                 }
-                Text("Jane Doe",         color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                Text(userName,         color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                 Text("jane@example.com", color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodySmall)
             }
         }

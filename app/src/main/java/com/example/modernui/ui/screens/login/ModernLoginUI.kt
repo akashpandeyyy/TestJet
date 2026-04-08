@@ -17,7 +17,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -33,8 +32,8 @@ import androidx.navigation.compose.rememberNavController
 import com.example.modernui.ui.components.FintechAppShell
 import com.example.modernui.ui.screens.common.OtpConfig
 import com.example.modernui.ui.screens.common.OtpVerificationScreen
-//import com.example.modernui.ui.screens.register.FintechRegisterScreenM3
-//import com.example.modernui.ui.screens.userdetail.UserDetailScreenM3
+import androidx.compose.ui.draw.scale
+import kotlin.math.cos
 import kotlin.math.sin
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -277,24 +276,19 @@ fun AnimatedBackgroundParticlesM3(color: Color) {
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
-    val userViewModel: UserViewModel = hiltViewModel()
-
-    // Session validation on app start
-    LaunchedEffect(Unit) {
-        userViewModel.validateSession(
-            onValid = { navController.navigate("dashboard") { popUpTo(0) } },
-            onInvalid = { /* stay on login */ }
-        )
-    }
 
     NavHost(navController = navController, startDestination = "login") {
 
         // ── LOGIN ─────────────────────────────────────────────────────────────
         composable("login") {
+            // ViewModel is OWNED here — lives as long as login is in the backstack
+            val userViewModel: UserViewModel = hiltViewModel()
+
             FintechLoginScreenM3(
                 viewModel = userViewModel,
                 onLoginSuccess = {
                     navController.navigate("Userdetail") {
+                        // Keep login entry alive so Userdetail can borrow its ViewModel
                         popUpTo("login") { inclusive = false }
                     }
                 },
@@ -311,6 +305,11 @@ fun AppNavigation() {
 
         // ── USER DETAIL ───────────────────────────────────────────────────────
         composable("Userdetail") {
+            // Grab the SAME ViewModel instance that login screen owns
+            val loginBackStackEntry = remember(it) {
+                navController.getBackStackEntry("login")
+            }
+            val userViewModel: UserViewModel = hiltViewModel(loginBackStackEntry)
             val uiState by userViewModel.state.collectAsState()
 
             when (val state = uiState) {
@@ -320,6 +319,7 @@ fun AppNavigation() {
                         onBackClick = { navController.popBackStack() },
                         onContinueToDashboard = {
                             navController.navigate("dashboard") {
+                                // Safe to clear login now — data is already in the dashboard VM
                                 popUpTo("login") { inclusive = true }
                             }
                         }
@@ -345,6 +345,7 @@ fun AppNavigation() {
                     }
                 }
                 else -> {
+                    // Should never reach here — login always sets state before navigating
                     LaunchedEffect(Unit) {
                         navController.navigate("login") { popUpTo(0) }
                     }
@@ -352,7 +353,6 @@ fun AppNavigation() {
             }
         }
 
-        // ── DASHBOARD ──────────────────────────────────────────────────────────
         composable("dashboard") {
             FintechAppShell()
         }

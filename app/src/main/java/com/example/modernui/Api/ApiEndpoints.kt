@@ -25,7 +25,7 @@ object ApiEndpoints {
     }
 
     object User {
-        const val FETCH_USER_BALANCE = "user/fetchUserBalance"
+        const val FETCH_USER_BALANCE = "common/fetchTotalPanelBalance"
         const val BANKS = "user/banks"
     }
 
@@ -39,5 +39,14 @@ object ApiEndpoints {
         const val MTB = "common/fetchPayoutUserBank/NA"
 
 
+    }
+    object CMS {
+        const val CMS = "aeps/generateCmsLink"
+
+
+    }
+    object Insurance
+    {
+        const val Insurance="insurance/lead"
     }
 }

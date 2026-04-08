@@ -6,10 +6,12 @@ import androidx.lifecycle.viewModelScope
 import com.example.modernui.Api.*
 import com.example.modernui.Api.model.LoginRequest
 import com.example.modernui.Api.model.UserResponse
+import com.example.modernui.core.datastore.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -24,6 +26,7 @@ sealed class UiState {
 @HiltViewModel
 class UserViewModel @Inject constructor(
     private val userRepo: UserRepo,
+    private val sessionManager: SessionManager,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -83,42 +86,30 @@ class UserViewModel @Inject constructor(
     }
 
     fun validateSession(onValid: () -> Unit, onInvalid: () -> Unit) {
-        val sharedPref = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-        val username = sharedPref.getString("username", null)
-        val password = sharedPref.getString("password", null)
-
-        if (username != null && password != null) {
-            viewModelScope.launch {
-                try {
-                    val response = userRepo.validateuserLogin(LoginRequest(username, password))
-                    if (response.status == 1) {
-                        onValid()
-                    } else {
-                        onInvalid()
-                    }
-                } catch (e: Exception) {
-                    onInvalid()
-                }
+        viewModelScope.launch {
+            val session = sessionManager.userSessionFlow.first()
+            if (session.token != null) {
+                onValid()
+            } else {
+                onInvalid()
             }
-        } else {
-            onInvalid()
         }
     }
 
     private fun saveToken(token: String?) {
-        if (token != null) {
-            val sharedPref = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-            sharedPref.edit()
-                .putString("auth_token", token)
-                .putString("username", lastUsername)
-                .putString("password", lastPassword)
-                .apply()
-        }
+        // This is now handled in UserRepo via sessionManager.saveSession
     }
-    
+
     fun setSuccess(response: UserResponse) {
-        saveToken(response.data?.token)
+        // This is also handled in UserRepo via sessionManager.saveSession
         _state.value = UiState.Success(response)
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            sessionManager.clearSession()
+            _state.value = UiState.Idle
+        }
     }
 
     fun resetState() {

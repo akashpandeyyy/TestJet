@@ -24,6 +24,7 @@ import com.example.modernui.ui.screens.cashdeposite.CashDepositScreen
 import com.example.modernui.ui.screens.history.HistoryScreen
 import com.example.modernui.ui.screens.home.HomeContent
 import com.example.modernui.ui.screens.home.HomeDrawerContent
+import com.example.modernui.ui.screens.home.HomeViewModel
 import com.example.modernui.ui.screens.recharge.RechargeScreen
 import com.example.modernui.ui.screens.report.ReportScreen
 import com.example.modernui.ui.screens.wallet.WalletScreen
@@ -225,16 +226,21 @@ fun FintechAppShell(
 @Composable
 fun FintechAppShellContent(
     viewModel: UserViewModel,
+    homeViewModel: HomeViewModel = hiltViewModel(),
     onServiceClick: (String) -> Unit = {}
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val drawerState  = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope        = rememberCoroutineScope()
+    val userName by homeViewModel.userName.collectAsState()
 
     ModalNavigationDrawer(
         drawerState   = drawerState,
         drawerContent = {
-            HomeDrawerContent(onClose = { scope.launch { drawerState.close() } })
+            HomeDrawerContent(
+                userName = userName,
+                onClose = { scope.launch { drawerState.close() } }
+            )
         }
     ) {
         Scaffold(
@@ -275,6 +281,7 @@ fun FintechAppShellContent(
                 ) { tab ->
                     when (tab) {
                         0 -> HomeContent(
+                            viewModel      = homeViewModel,
                             onMenuClick    = { scope.launch { drawerState.open() } },
                             onServiceClick = onServiceClick
                         )

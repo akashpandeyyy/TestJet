@@ -1,9 +1,12 @@
 package com.example.modernui.Api
 
 import android.content.Context
+import com.example.modernui.Api.model.Cmsresponce
 import com.example.modernui.Api.model.LoginRequest
 import com.example.modernui.Api.model.UserResponse
 import com.example.modernui.Api.model.ValidateUser
+import com.example.modernui.Api.model.balanceresponce
+import com.example.modernui.core.datastore.SessionManager
 import com.example.modernui.ui.screens.aeps.AepsModel
 import com.example.modernui.ui.screens.aeps.AepsModelResponce
 import com.example.modernui.ui.screens.common.TwoFAresponce
@@ -15,18 +18,32 @@ import javax.inject.Singleton
 @Singleton
 class UserRepo @Inject constructor(
     @MainApi private val apiService: ApiService,
+    private val sessionManager: SessionManager,
     @ApplicationContext private val context: Context
 ) {
     suspend fun userLogin(request: LoginRequest): UserResponse {
         val response = apiService.userLogin(request)
-        if (response.status == 1 && response.data?.token != null) {
-            saveToken(response.data.token)
+        if (response.status == 1 && response.data != null) {
+            val userData = response.data.userData
+            sessionManager.saveSession(
+                token = response.data.token ?: "",
+                name = userData?.name ?: "",
+                roleId = userData?.roleId ?: "",
+                userId = userData?.userId ?: "",
+                mobile = userData?.mobile ?: ""
+            )
         }
         return response
     }
 
     suspend fun validateuserLogin(request: LoginRequest): ValidateUser {
-        return apiService.validateuserLogin(request)
+        val response = apiService.validateuserLogin(request)
+        if (response.status == 1 && response.data != null) {
+            // Update session data if needed
+            val userData = response.data
+            // We might not have the token here, so we only update if we have a way to get it or if it's already there
+        }
+        return response
     }
 
     suspend fun validateuserAeps(request: AepsModel): AepsModelResponce {
@@ -37,9 +54,51 @@ class UserRepo @Inject constructor(
         return apiService.checkAepsStatus()
     }
 
+    suspend fun doRecharge(request: Map<String, String>): UserResponse {
+        return apiService.doRecharge(request)
+    }
+
+    suspend fun getMobilePlans(operator: String, circle: String): UserResponse {
+        return apiService.getMobilePlans(operator, circle)
+    }
+
+    suspend fun fetchUserBalance(): balanceresponce {
+        return apiService.fetchUserBalance()
+    }
+
+    suspend fun getBanks(): UserResponse {
+        return apiService.getBanks()
+    }
+
+    suspend fun fetchIncodeByService(service: String): UserResponse {
+        return apiService.fetchIncodeByService(service)
+    }
+
+    suspend fun fetchMtbData(): UserResponse {
+        return apiService.fetchMtbData()
+    }
+    suspend fun cmsscreen(): Cmsresponce  {
+        return apiService.cmsscreen()
+    }
+
     // validate user otp
     suspend fun validateuserotp(request: otprequest): UserResponse {
-        return apiService.validateuserotp(request)
+        val response = apiService.validateuserotp(request)
+        if (response.status == 1 && response.data != null) {
+            val userData = response.data.userData
+            sessionManager.saveSession(
+                token = response.data.token ?: "",
+                name = userData?.name ?: "",
+                roleId = userData?.roleId ?: "",
+                userId = userData?.userId ?: "",
+                mobile = userData?.mobile ?: ""
+            )
+        }
+        return response
+    }
+
+    suspend fun logout() {
+        sessionManager.clearSession()
     }
 
     private fun saveToken(token: String) {

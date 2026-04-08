@@ -30,9 +30,8 @@ object RetrofitInstance {
 
         appContext?.let {
             builder.addInterceptor(RequestInterceptor(it))
+            builder.addInterceptor(ResponseInterceptor(it))
         }
-        
-        builder.addInterceptor(ResponseInterceptor())
         
         if (BuildConfig.DEBUG) {
             builder.addInterceptor(HttpLoggingInterceptor().apply {

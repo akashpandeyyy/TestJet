@@ -8,6 +8,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -356,6 +358,50 @@ fun NavyHeaderCard(
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────
+// ERROR MESSAGE BANNER — reusable error alert
+// ─────────────────────────────────────────────
+
+@Composable
+fun ErrorMessageBanner(
+    message:   String,
+    onDismiss: () -> Unit
+) {
+    Surface(
+        color    = MaterialTheme.colorScheme.errorContainer,
+        shape    = RoundedCornerShape(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Row(
+            modifier          = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                imageVector        = Icons.Default.ErrorOutline,
+                contentDescription = "Error",
+                tint               = MaterialTheme.colorScheme.error
+            )
+            Text(
+                text     = message,
+                style    = MaterialTheme.typography.bodySmall,
+                color    = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.weight(1f)
+            )
+            IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
+                Icon(
+                    imageVector        = Icons.Default.Close,
+                    contentDescription = "Dismiss",
+                    tint               = MaterialTheme.colorScheme.error,
+                    modifier           = Modifier.size(16.dp)
+                )
             }
         }
     }
