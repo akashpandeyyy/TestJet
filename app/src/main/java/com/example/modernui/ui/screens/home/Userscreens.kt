@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.modernui.ui.theme.BannerSlide
 import com.example.modernui.ui.theme.ServiceItem
 import kotlinx.coroutines.delay
@@ -81,27 +82,28 @@ private val bannerSlides = listOf(
 
 @Composable
 fun HomeContent(
+    viewModel: HomeViewModel = hiltViewModel(),
     onMenuClick:    () -> Unit       = {},
     onLogout:       () -> Unit       = {},
     onServiceClick: (String) -> Unit = {}
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val balance by viewModel.balance.collectAsState()
+    val aepsBalance by viewModel.aepsBalance.collectAsState()
+    val walletBalance by viewModel.walletBalance.collectAsState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(colorScheme.background)
     ) {
-
-        // ── TOP BAR ──────────────────────────────────
-        // Uses MainHomeTopBar defined in HomeScreen.kt
+        // ... (Top Bar stays same) ...
         MainHomeTopBar(
             title       = "Home",
             onMenuClick = onMenuClick,
             onLogout    = onLogout
         )
 
-        // ── SCROLLABLE BODY ───────────────────────────
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -109,9 +111,13 @@ fun HomeContent(
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-
-            // Wallet Balance
-            WalletBalanceCard(balance = "₹932.95")
+            // Wallet Balance with detailed breakdown
+            DetailedWalletBalanceCard(
+                balance = balance,
+                aepsBalance = aepsBalance,
+                walletBalance = walletBalance
+            )
+            // ... (rest of the content) ...
 
             // Banner Slider
             BannerSlider(slides = bannerSlides)
@@ -138,36 +144,70 @@ fun HomeContent(
 // ─────────────────────────────────────────────
 
 @Composable
-fun WalletBalanceCard(balance: String) {
+fun DetailedWalletBalanceCard(
+    balance: String,
+    aepsBalance: String,
+    walletBalance: String
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape    = RoundedCornerShape(16.dp),
-        colors   = CardDefaults.cardColors(containerColor = Color.Transparent)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    brush = Brush.horizontalGradient(listOf(NavyDark, NavyLight)),
-                    shape = RoundedCornerShape(16.dp)
+                    brush = Brush.horizontalGradient(listOf(NavyDark, NavyLight))
                 )
                 .padding(20.dp)
         ) {
-            Column {
-                Text(
-                    text  = "Wallet Balance",
-                    color = Color.White.copy(alpha = 0.8f),
-                    style = MaterialTheme.typography.labelLarge
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text       = balance,
-                    color      = Color.White,
-                    style      = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.Bold
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("Total Balance",
+                        color = Color.White.copy(alpha = 0.8f),
+                        style = MaterialTheme.typography.labelLarge)
+                    Text(balance,
+                        color      = Color.White,
+                        style      = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold)
+                }
+                Icon(
+                    imageVector = Icons.Default.AccountBalanceWallet,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.5f),
+                    modifier = Modifier.size(40.dp)
                 )
             }
+
+            Spacer(Modifier.height(16.dp))
+            HorizontalDivider(color = Color.White.copy(alpha = 0.2f))
+            Spacer(Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                BalanceSubItem(label = "Main Wallet", amount = walletBalance, icon = Icons.Default.Wallet)
+                BalanceSubItem(label = "AEPS Wallet", amount = aepsBalance, icon = Icons.Default.Fingerprint)
+            }
         }
+    }
+}
+
+@Composable
+private fun BalanceSubItem(label: String, amount: String, icon: ImageVector) {
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(14.dp))
+            Spacer(Modifier.width(4.dp))
+            Text(label, color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelSmall)
+        }
+        Text(amount, color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -328,7 +368,10 @@ private fun ServiceGridItem(
 // ─────────────────────────────────────────────
 
 @Composable
-fun HomeDrawerContent(onClose: () -> Unit = {}) {
+fun HomeDrawerContent(
+    userName: String = "User",
+    onClose: () -> Unit = {}
+) {
     val colorScheme = MaterialTheme.colorScheme
 
     ModalDrawerSheet(
@@ -354,7 +397,7 @@ fun HomeDrawerContent(onClose: () -> Unit = {}) {
                 Spacer(Modifier.width(16.dp))
                 Column {
                     Text("Welcome Back", color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp)
-                    Text("John Doe",    color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text(userName,    color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }

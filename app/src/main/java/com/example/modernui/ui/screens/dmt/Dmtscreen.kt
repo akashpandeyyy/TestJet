@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.modernui.ui.components.*
 import com.example.modernui.ui.screens.addharpay.FingerprintScanningAnimation
 import com.example.modernui.ui.screens.addharpay.VerificationFailedBanner
@@ -65,14 +66,14 @@ data class Beneficiary(
 // Simulated "existing" mobiles that have a beneficiary list
 private val knownMobiles = setOf("91653371777", "9999999999", "8888888888")
 
-private val mockBeneficiaries = listOf(
-    Beneficiary("b1", "Ansh Sharma",   "XXXX XXXX 4291", "State Bank of India",  "SBIN0001234", "RS"),
-    Beneficiary("b2", "Ayush Mishra",    "XXXX XXXX 8803", "HDFC Bank",            "HDFC0005678", "PV"),
-    Beneficiary("b3", "Akhil Dwivedi",     "XXXX XXXX 1147", "ICICI Bank",           "ICIC0009876", "AG"),
-    Beneficiary("b4", "Anurag Dwivedi",    "XXXX XXXX 3366", "Punjab National Bank", "PUNB0004321", "SD"),
-)
-
 private val transferLimits = listOf("1000", "2000", "5000",)
+
+val mockBeneficiaries = listOf(
+    Beneficiary("b1", "Ansh Sharma", "XXXX XXXX 4291", "State Bank of India", "SBIN0001234", "RS"),
+    Beneficiary("b2", "Ayush Mishra", "XXXX XXXX 8803", "HDFC Bank", "HDFC0005678", "PV"),
+    Beneficiary("b3", "Akhil Dwivedi", "XXXX XXXX 1147", "ICICI Bank", "ICIC0009876", "AG"),
+    Beneficiary("b4", "Anurag Dwivedi", "XXXX XXXX 3366", "Punjab National Bank", "PUNB0004321", "SD"),
+)
 
 
 // ─────────────────────────────────────────────
@@ -82,7 +83,8 @@ private val transferLimits = listOf("1000", "2000", "5000",)
 @Composable
 fun DmtScreen(
     initialTab:  Int = 0,
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    viewModel: DmtViewModel = hiltViewModel()
 ) {
     var currentScreen    by remember { mutableStateOf(DmtScreen.ENTER_MOBILE) }
     var senderMobile     by remember { mutableStateOf("") }
@@ -90,6 +92,11 @@ fun DmtScreen(
     var transferAmount   by remember { mutableStateOf("") }
     var otpValue         by remember { mutableStateOf("") }
     var selectedTab      by remember { mutableIntStateOf(initialTab) }
+
+    val beneficiaries by viewModel.beneficiaries.collectAsState()
+    val balance by viewModel.balance.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
 
     val colorScheme = MaterialTheme.colorScheme
 
@@ -112,6 +119,14 @@ fun DmtScreen(
                 DmtScreen.NEW_USER_BIOMETRIC   -> "Biometric Verify"
                 DmtScreen.NEW_USER_SUCCESS     -> "Registration Done"
             },
+            actions = {
+                Text(
+                    text = balance,
+                    color = Color.White,
+                    modifier = Modifier.padding(end = 12.dp),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            },
             onBackClick = {
                 // Custom back — navigate within flow or go up
                 when (currentScreen) {
@@ -125,6 +140,10 @@ fun DmtScreen(
                 }
             }
         )
+
+        if (errorMessage != null) {
+            ErrorMessageBanner(message = errorMessage!!, onDismiss = { /* Optionally clear error */ })
+        }
 
         // ── Screen content ─────────────────────
         AnimatedContent(
@@ -146,14 +165,14 @@ fun DmtScreen(
                         senderMobile  = mobile
                         currentScreen = DmtScreen.NEW_USER_SEND_OTP
                     },
-                    knownMobiles    = knownMobiles,
                     selectedTab     = selectedTab,
-                    onTabChange     = { selectedTab = it }
+                    onTabChange     = { selectedTab = it },
+                    viewModel       = viewModel
                 )
 
                 DmtScreen.BENEFICIARY_LIST -> BeneficiaryListScreen(
                     senderMobile    = senderMobile,
-                    beneficiaries   = mockBeneficiaries,
+                    beneficiaries   = beneficiaries,
                     onPayClick      = { benef ->
                         selectedBenef = benef
                         currentScreen = DmtScreen.PAY_ENTER_AMOUNT
@@ -164,15 +183,15 @@ fun DmtScreen(
                     beneficiary    = selectedBenef!!,
                     amount         = transferAmount,
                     onAmountChange = { transferAmount = it },
-                    onProceed      = { currentScreen = DmtScreen.PAY_SEND_OTP }
+                    onProceed      = {
+                        viewModel.sendOtp(senderMobile) { success ->
+                            if (success) currentScreen = DmtScreen.PAY_VERIFY_OTP
+                        }
+                    },
+                    isLoading      = isLoading
                 )
 
-                DmtScreen.PAY_SEND_OTP -> PaySendOtpScreen(
-                    senderMobile = senderMobile,
-                    beneficiary  = selectedBenef!!,
-                    amount       = transferAmount,
-                    onOtpSent    = { currentScreen = DmtScreen.PAY_VERIFY_OTP }
-                )
+                DmtScreen.PAY_SEND_OTP -> { /* Deprecated in new flow or integrated */ }
 
                 DmtScreen.PAY_VERIFY_OTP -> PayVerifyOtpScreen(
                     otp         = otpValue,
@@ -180,7 +199,13 @@ fun DmtScreen(
                     senderMobile = senderMobile,
                     beneficiary  = selectedBenef!!,
                     amount       = transferAmount,
-                    onVerified  = { currentScreen = DmtScreen.TRANSACTION_SUCCESS }
+                    onVerified  = {
+                        viewModel.performTransfer(selectedBenef!!, transferAmount) { success, _ ->
+                            if (success) currentScreen = DmtScreen.TRANSACTION_SUCCESS
+                        }
+                    },
+                    isLoading   = isLoading,
+                    onResend    = { viewModel.sendOtp(senderMobile) {} }
                 )
 
                 DmtScreen.TRANSACTION_SUCCESS -> TransactionSuccessScreen(
@@ -198,14 +223,24 @@ fun DmtScreen(
 
                 DmtScreen.NEW_USER_SEND_OTP -> NewUserSendOtpScreen(
                     senderMobile = senderMobile,
-                    onOtpSent    = { currentScreen = DmtScreen.NEW_USER_VERIFY_OTP }
+                    onOtpSent    = {
+                        viewModel.sendOtp(senderMobile) { success ->
+                            if (success) currentScreen = DmtScreen.NEW_USER_VERIFY_OTP
+                        }
+                    },
+                    isLoading    = isLoading
                 )
 
                 DmtScreen.NEW_USER_VERIFY_OTP -> NewUserVerifyOtpScreen(
                     otp         = otpValue,
                     onOtpChange = { otpValue = it },
                     senderMobile = senderMobile,
-                    onVerified  = { currentScreen = DmtScreen.NEW_USER_BIOMETRIC }
+                    onVerified  = {
+                        viewModel.verifyOtp(otpValue) { success ->
+                            if (success) currentScreen = DmtScreen.NEW_USER_BIOMETRIC
+                        }
+                    },
+                    isLoading   = isLoading
                 )
 
                 DmtScreen.NEW_USER_BIOMETRIC -> NewUserBiometricScreen(
@@ -233,12 +268,12 @@ fun DmtScreen(
 fun EnterMobileScreen(
     onKnownMobile:   (String) -> Unit,
     onUnknownMobile: (String) -> Unit,
-    knownMobiles:    Set<String>,
     selectedTab:     Int,
-    onTabChange:     (Int) -> Unit
+    onTabChange:     (Int) -> Unit,
+    viewModel:       DmtViewModel
 ) {
     var mobile     by remember { mutableStateOf("") }
-    var isChecking by remember { mutableStateOf(false) }
+    val isLoading by viewModel.isLoading.collectAsState()
     val mobileError = mobile.isNotEmpty() && mobile.length != 10
     val isReady     = mobile.length == 10
 
@@ -361,7 +396,7 @@ fun EnterMobileScreen(
                     }
                 }
 
-                if (isChecking) {
+                if (isLoading) {
                     Row(
                         modifier              = Modifier.fillMaxWidth(),
                         verticalAlignment     = Alignment.CenterVertically,
@@ -378,20 +413,15 @@ fun EnterMobileScreen(
                     }
                 }
 
-                // Simulate async check with LaunchedEffect
-                LaunchedEffect(isChecking) {
-                    if (isChecking) {
-                        delay(1200)
-                        if (mobile in knownMobiles) onKnownMobile(mobile)
-                        else onUnknownMobile(mobile)
-                        isChecking = false
-                    }
-                }
-
                 NavyPrimaryButton(
                     text    = "Check & Continue",
-                    onClick = { isChecking = true },
-                    enabled = isReady && !isChecking,
+                    onClick = {
+                        viewModel.checkMobile(mobile) { isKnown ->
+                            if (isKnown) onKnownMobile(mobile)
+                            else onUnknownMobile(mobile)
+                        }
+                    },
+                    enabled = isReady && !isLoading,
                     icon    = Icons.Default.Search
                 )
             }
@@ -572,7 +602,8 @@ fun PayEnterAmountScreen(
     beneficiary:    Beneficiary,
     amount:         String,
     onAmountChange: (String) -> Unit,
-    onProceed:      () -> Unit
+    onProceed:      () -> Unit,
+    isLoading:      Boolean = false
 ) {
     val amountError = amount.isNotEmpty() && (amount.toDoubleOrNull() ?: 0.0) <= 0.0
     val isReady     = amount.isNotEmpty() && !amountError
@@ -639,9 +670,9 @@ fun PayEnterAmountScreen(
         }
 
         NavyPrimaryButton(
-            text    = "Send OTP to Confirm",
+            text    = if (isLoading) "Processing..." else "Send OTP to Confirm",
             onClick = onProceed,
-            enabled = isReady,
+            enabled = isReady && !isLoading,
             icon    = Icons.Default.Sms
         )
 
@@ -761,9 +792,10 @@ fun PayVerifyOtpScreen(
     senderMobile: String,
     beneficiary:  Beneficiary,
     amount:       String,
-    onVerified:   () -> Unit
+    onVerified:   () -> Unit,
+    isLoading:    Boolean = false,
+    onResend:     () -> Unit = {}
 ) {
-    var isVerifying by remember { mutableStateOf(false) }
     var resendTimer by remember { mutableIntStateOf(30) }
 
     // Countdown timer
@@ -771,15 +803,6 @@ fun PayVerifyOtpScreen(
         while (resendTimer > 0) {
             delay(1000)
             resendTimer--
-        }
-    }
-
-    // Simulate verification
-    LaunchedEffect(isVerifying) {
-        if (isVerifying) {
-            delay(1500)
-            isVerifying = false
-            onVerified()
         }
     }
 
@@ -820,7 +843,10 @@ fun PayVerifyOtpScreen(
                         color = MaterialTheme.colorScheme.outline
                     )
                     if (resendTimer == 0) {
-                        TextButton(onClick = { resendTimer = 30 }) {
+                        TextButton(onClick = {
+                            resendTimer = 30
+                            onResend()
+                        }) {
                             Text("Resend OTP",
                                 color      = FintechColors.NavyDark,
                                 fontWeight = FontWeight.Bold,
@@ -838,9 +864,9 @@ fun PayVerifyOtpScreen(
         }
 
         NavyPrimaryButton(
-            text    = if (isVerifying) "Verifying..." else "Verify & Transfer",
-            onClick = { isVerifying = true },
-            enabled = isReady && !isVerifying,
+            text    = if (isLoading) "Verifying..." else "Verify & Transfer",
+            onClick = onVerified,
+            enabled = isReady && !isLoading,
             icon    = Icons.Default.VerifiedUser
         )
 
@@ -976,14 +1002,9 @@ fun TransactionSuccessScreen(
 @Composable
 fun NewUserSendOtpScreen(
     senderMobile: String,
-    onOtpSent:    () -> Unit
+    onOtpSent:    () -> Unit,
+    isLoading:    Boolean = false
 ) {
-    var isSending by remember { mutableStateOf(false) }
-
-    LaunchedEffect(isSending) {
-        if (isSending) { delay(1500); isSending = false; onOtpSent() }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -1039,9 +1060,9 @@ fun NewUserSendOtpScreen(
         RegistrationStepBar(currentStep = 1)
 
         NavyPrimaryButton(
-            text    = if (isSending) "Sending..." else "Send OTP",
-            onClick = { isSending = true },
-            enabled = !isSending,
+            text    = if (isLoading) "Sending..." else "Send OTP",
+            onClick = onOtpSent,
+            enabled = !isLoading,
             icon    = Icons.Default.Sms
         )
     }
@@ -1057,15 +1078,12 @@ fun NewUserVerifyOtpScreen(
     otp:          String,
     onOtpChange:  (String) -> Unit,
     senderMobile: String,
-    onVerified:   () -> Unit
+    onVerified:   () -> Unit,
+    isLoading:    Boolean = false
 ) {
-    var isVerifying by remember { mutableStateOf(false) }
     var resendTimer by remember { mutableIntStateOf(30) }
 
     LaunchedEffect(Unit) { while (resendTimer > 0) { delay(1000); resendTimer-- } }
-    LaunchedEffect(isVerifying) {
-        if (isVerifying) { delay(1500); isVerifying = false; onVerified() }
-    }
 
     val isReady = otp.length == 6
 
@@ -1112,9 +1130,9 @@ fun NewUserVerifyOtpScreen(
         }
 
         NavyPrimaryButton(
-            text    = if (isVerifying) "Verifying..." else "Verify OTP",
-            onClick = { isVerifying = true },
-            enabled = isReady && !isVerifying,
+            text    = if (isLoading) "Verifying..." else "Verify OTP",
+            onClick = onVerified,
+            enabled = isReady && !isLoading,
             icon    = Icons.Default.VerifiedUser
         )
     }

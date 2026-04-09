@@ -21,8 +21,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.modernui.ui.components.*
 import com.example.modernui.ui.theme.FintechColors
 
@@ -58,27 +60,20 @@ private val dthOperators    = listOf("Tata Play", "Dish TV", "Airtel DTH", "Sun 
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun RechargeScreen(
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    viewModel: RechargeViewModel = hiltViewModel()
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val uiState by viewModel.uiState.collectAsState()
 
-    // ── Tab state (Mobile / DTH) ──────────────
-    var selectedTab by remember { mutableIntStateOf(0) }
+    // ── Form state from ViewModel ─────────────
+    val selectedTab by viewModel.selectedTab.collectAsState()
+    val subscriberNumber by viewModel.subscriberNumber.collectAsState()
+    val selectedOperator by viewModel.selectedOperator.collectAsState()
+    val selectedState by viewModel.selectedState.collectAsState()
+    val amount by viewModel.amount.collectAsState()
 
-    // ── Form state ────────────────────────────
-    var subscriberNumber  by remember { mutableStateOf("") }
-    var selectedOperator  by remember { mutableStateOf("") }
-    var selectedState     by remember { mutableStateOf("") }
-    var amount            by remember { mutableStateOf("") }
     var selectedPlanIndex by remember { mutableIntStateOf(-1) }
-
-    // Reset operator when tab changes
-    LaunchedEffect(selectedTab) {
-        selectedOperator  = ""
-        selectedState     = ""
-        selectedPlanIndex = -1
-        amount            = ""
-    }
 
     val operators   = if (selectedTab == 0) mobileOperators else dthOperators
     val maxNumLen   = if (selectedTab == 0) 10 else 12
@@ -88,6 +83,14 @@ fun RechargeScreen(
             && selectedState.isNotEmpty()
             && amount.isNotEmpty()
 
+    // Handle UI State
+    LaunchedEffect(uiState) {
+        if (uiState is RechargeUiState.Success) {
+            // Show success dialog or navigate
+            viewModel.resetState()
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -95,6 +98,10 @@ fun RechargeScreen(
     ) {
         // ── Top bar ───────────────────────────
         DetailTopBar(title = "Recharge", onBackClick = onBackClick)
+
+        if (uiState is RechargeUiState.Loading) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        }
 
         Column(
             modifier = Modifier
@@ -142,7 +149,7 @@ fun RechargeScreen(
                                         .weight(1f)
                                         .clip(RoundedCornerShape(10.dp))
                                         .background(if (isSelected) Color.White else Color.Transparent)
-                                        .clickable { selectedTab = index }
+                                        .clickable { viewModel.onTabChange(index) }
                                         .padding(vertical = 10.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -178,7 +185,7 @@ fun RechargeScreen(
 
                     NavyOutlinedField(
                         value         = subscriberNumber,
-                        onValueChange = { if (it.all(Char::isDigit)) subscriberNumber = it },
+                        onValueChange = { viewModel.onSubscriberNumberChange(it) },
                         label         = if (selectedTab == 0) "Mobile Number *" else "Subscriber ID *",
                         placeholder   = if (selectedTab == 0) "10-digit mobile number" else "Enter subscriber ID",
                         leadingIcon   = if (selectedTab == 0) Icons.Default.Phone else Icons.Default.ConfirmationNumber,
@@ -195,43 +202,17 @@ fun RechargeScreen(
                         }) else null
                     )
 
-                    // Operator + State side by side
-//                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-//                        NavyDropdownField(
-//                            label            = "Operator *",
-//                            leadingIcon      = Icons.Default.Business,
-//                            selectedValue    = selectedOperator,
-//                            options          = operators,
-//                            onOptionSelected = { selectedOperator = it },
-//                            modifier         = Modifier.weight(1f)
-//                        )
-//                        NavyDropdownField(
-//                            label            = "State *",
-//                            leadingIcon      = Icons.Default.LocationOn,
-//                            selectedValue    = selectedState,
-//                            options          = allStates,
-//                            onOptionSelected = { selectedState = it },
-//                            modifier         = Modifier.weight(1f)
-//                        )
-//                    }
-//                }
-//            }
-
-
-                    // new one
                     BoxWithConstraints {
                         val isCompact = maxWidth < 400.dp
 
                         if (isCompact) {
-                            // Small screens → Stack vertically
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-
                                 NavyDropdownField(
                                     label            = "Operator *",
                                     leadingIcon      = Icons.Default.Business,
                                     selectedValue    = selectedOperator,
                                     options          = operators,
-                                    onOptionSelected = { selectedOperator = it },
+                                    onOptionSelected = { viewModel.onOperatorChange(it) },
                                     modifier         = Modifier.fillMaxWidth()
                                 )
 
@@ -240,20 +221,18 @@ fun RechargeScreen(
                                     leadingIcon      = Icons.Default.LocationOn,
                                     selectedValue    = selectedState,
                                     options          = allStates,
-                                    onOptionSelected = { selectedState = it },
+                                    onOptionSelected = { viewModel.onStateChange(it) },
                                     modifier         = Modifier.fillMaxWidth()
                                 )
                             }
                         } else {
-                            // Large screens → Side by side (your original UI)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-
                                 NavyDropdownField(
                                     label            = "Operator *",
                                     leadingIcon      = Icons.Default.Business,
                                     selectedValue    = selectedOperator,
                                     options          = operators,
-                                    onOptionSelected = { selectedOperator = it },
+                                    onOptionSelected = { viewModel.onOperatorChange(it) },
                                     modifier         = Modifier.weight(1f)
                                 )
 
@@ -262,7 +241,7 @@ fun RechargeScreen(
                                     leadingIcon      = Icons.Default.LocationOn,
                                     selectedValue    = selectedState,
                                     options          = allStates,
-                                    onOptionSelected = { selectedState = it },
+                                    onOptionSelected = { viewModel.onStateChange(it) },
                                     modifier         = Modifier.weight(1f)
                                 )
                             }
@@ -308,7 +287,7 @@ fun RechargeScreen(
                             )
                         }
                         Spacer(Modifier.weight(1f))
-                        TextButton(onClick = { selectedOperator = ""; selectedState = "" }) {
+                        TextButton(onClick = { viewModel.onOperatorChange(""); viewModel.onStateChange("") }) {
                             Text("Change", color = FintechColors.NavyDark,
                                 style = MaterialTheme.typography.labelMedium)
                         }
@@ -323,8 +302,8 @@ fun RechargeScreen(
                     NavyOutlinedField(
                         value         = amount,
                         onValueChange = {
-                            amount            = it
-                            selectedPlanIndex = -1          // deselect plan on manual entry
+                            viewModel.onAmountChange(it)
+                            selectedPlanIndex = -1
                         },
                         label       = "Amount (₹) *",
                         placeholder = "Enter or pick a plan below",
@@ -357,7 +336,7 @@ fun RechargeScreen(
                                     )
                                     .clickable {
                                         selectedPlanIndex = index
-                                        amount            = plan.amount
+                                        viewModel.onAmountChange(plan.amount)
                                     }
                             ) {
                                 Row(
@@ -407,7 +386,7 @@ fun RechargeScreen(
                 }
             }
 
-            // ── Summary strip (shows when ready) ─
+            // ── Summary strip ──────────
             if (isFormValid) {
                 Surface(
                     shape    = RoundedCornerShape(12.dp),
@@ -454,11 +433,21 @@ fun RechargeScreen(
                 }
             }
 
+            if (uiState is RechargeUiState.Error) {
+                Text(
+                    text = (uiState as RechargeUiState.Error).message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+            }
+
             // ── Submit ────────────────────────
             NavyPrimaryButton(
                 text    = "Proceed to Pay",
-                onClick = { /* trigger payment */ },
-                enabled = isFormValid,
+                onClick = { viewModel.performRecharge() },
+                enabled = isFormValid && uiState !is RechargeUiState.Loading,
                 icon    = Icons.Default.Payment
             )
 

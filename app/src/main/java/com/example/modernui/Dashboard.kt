@@ -1,10 +1,7 @@
 package com.example.modernui
 
 import android.content.res.Configuration
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -16,27 +13,40 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.example.modernui.Api.LoginData
-import com.example.modernui.Api.MyUserData
-import com.example.modernui.Api.UserResponse
+import com.example.modernui.Api.model.LoginData
+import com.example.modernui.Api.model.MyUserData
+import com.example.modernui.Api.model.UserResponse
+import com.example.modernui.ui.screens.home.HomeViewModel
 import com.example.modernui.ui.screens.login.UiState
 import com.example.modernui.ui.screens.login.UserViewModel
 
 
 @Composable
 fun FintechDashboardM3(
-    viewModel: UserViewModel = hiltViewModel()
+    viewModel: UserViewModel = hiltViewModel(),
+    homeViewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.state.collectAsState()
-    FintechDashboardContent(uiState)
+    val balance by homeViewModel.balance.collectAsState()
+    val walletBalance by homeViewModel.walletBalance.collectAsState()
+    val aepsBalance by homeViewModel.aepsBalance.collectAsState()
+
+    FintechDashboardContent(
+        uiState = uiState,
+        totalBalance = balance,
+        walletBalance = walletBalance,
+        aepsBalance = aepsBalance
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FintechDashboardContent(uiState: UiState) {
+fun FintechDashboardContent(
+    uiState: UiState,
+    totalBalance: String = "₹0.00",
+    walletBalance: String = "₹0.00",
+    aepsBalance: String = "₹0.00"
+) {
     val colorScheme = MaterialTheme.colorScheme
 
     // Safely extract user data from the Success state
@@ -129,7 +139,23 @@ fun FintechDashboardContent(uiState: UiState) {
             ) {
                 Column(modifier = Modifier.padding(24.dp)) {
                     Text("Total Balance", style = MaterialTheme.typography.labelMedium)
-                    Text("₹24,500.00", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
+                    Text(totalBalance, style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text("Wallet", style = MaterialTheme.typography.labelSmall, color = colorScheme.onPrimaryContainer.copy(alpha = 0.7f))
+                            Text(walletBalance, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text("AEPS", style = MaterialTheme.typography.labelSmall, color = colorScheme.onPrimaryContainer.copy(alpha = 0.7f))
+                            Text(aepsBalance, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(onClick = {}, modifier = Modifier.weight(1f)) { Text("Send") }

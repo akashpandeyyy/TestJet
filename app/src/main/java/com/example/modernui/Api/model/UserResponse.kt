@@ -1,4 +1,4 @@
-package com.example.modernui.Api
+package com.example.modernui.Api.model
 import com.google.gson.annotations.SerializedName
 
 data class UserResponse(

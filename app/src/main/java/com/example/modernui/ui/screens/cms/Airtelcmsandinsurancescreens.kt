@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.modernui.ui.components.*
 import com.example.modernui.ui.theme.FintechColors
 import kotlinx.coroutines.delay
@@ -59,10 +60,14 @@ private val AirtelRedLight = Color(0xFFFFEBEE)
 
 @Composable
 fun AirtelCmsScreen(
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    viewModel: CmsViewModel = hiltViewModel()
 ) {
     val context     = LocalContext.current
     val colorScheme = MaterialTheme.colorScheme
+
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
 
     // Animate the redirect button
     var showRedirectHint by remember { mutableStateOf(false) }
@@ -80,99 +85,109 @@ fun AirtelCmsScreen(
             onBackClick = onBackClick
         )
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
+        if (errorMessage != null) {
+            ErrorMessageBanner(message = errorMessage!!, onDismiss = {})
+        }
 
-            // ── Airtel branded header ─────────
-            AirtelHeaderCard()
-
-            // ── What is Airtel CMS ────────────
-            SectionCard(title = "About Airtel CMS", icon = Icons.Default.Info) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        "Airtel CMS (Content Management System) is the official Airtel portal for retailers and B2B partners to manage transactions, view commission reports, and access exclusive business tools.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colorScheme.onSurface.copy(alpha = 0.85f),
-                        lineHeight = 20.sp
-                    )
-                }
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = AirtelRed)
             }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
 
-            // ── Features ─────────────────────
-            SectionCard(title = "CMS Features", icon = Icons.Default.Dashboard) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    val features = listOf(
-                        Icons.Default.ReceiptLong   to "View & download commission statements",
-                        Icons.Default.AccountBalance to "Manage B2B wallet & payouts",
-                        Icons.Default.Inventory      to "Track SIM & data card inventory",
-                        Icons.Default.Assessment     to "Sales reports & analytics",
-                        Icons.Default.SupportAgent   to "Raise & track support tickets",
-                        Icons.Default.Notifications  to "Notifications & scheme alerts",
-                    )
-                    features.forEach { (icon, label) ->
-                        Row(
-                            verticalAlignment     = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Surface(
-                                shape    = CircleShape,
-                                color    = AirtelRed.copy(alpha = 0.1f),
-                                modifier = Modifier.size(32.dp)
+                // ── Airtel branded header ─────────
+                AirtelHeaderCard()
+
+                // ── What is Airtel CMS ────────────
+                SectionCard(title = "About Airtel CMS", icon = Icons.Default.Info) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            "Airtel CMS (Content Management System) is the official Airtel portal for retailers and B2B partners to manage transactions, view commission reports, and access exclusive business tools.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colorScheme.onSurface.copy(alpha = 0.85f),
+                            lineHeight = 20.sp
+                        )
+                    }
+                }
+
+                // ── Features ─────────────────────
+                SectionCard(title = "CMS Features", icon = Icons.Default.Dashboard) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        val features = listOf(
+                            Icons.Default.ReceiptLong   to "View & download commission statements",
+                            Icons.Default.AccountBalance to "Manage B2B wallet & payouts",
+                            Icons.Default.Inventory      to "Track SIM & data card inventory",
+                            Icons.Default.Assessment     to "Sales reports & analytics",
+                            Icons.Default.SupportAgent   to "Raise & track support tickets",
+                            Icons.Default.Notifications  to "Notifications & scheme alerts",
+                        )
+                        features.forEach { (icon, label) ->
+                            Row(
+                                verticalAlignment     = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Box(contentAlignment = Alignment.Center,
-                                    modifier = Modifier.fillMaxSize()) {
-                                    Icon(icon, null,
-                                        tint     = AirtelRed,
-                                        modifier = Modifier.size(16.dp))
+                                Surface(
+                                    shape    = CircleShape,
+                                    color    = AirtelRed.copy(alpha = 0.1f),
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center,
+                                        modifier = Modifier.fillMaxSize()) {
+                                        Icon(icon, null,
+                                            tint     = AirtelRed,
+                                            modifier = Modifier.size(16.dp))
+                                    }
                                 }
+                                Text(label,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = colorScheme.onSurface.copy(alpha = 0.85f))
                             }
-                            Text(label,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = colorScheme.onSurface.copy(alpha = 0.85f))
                         }
                     }
                 }
-            }
 
-            // ── Redirect CTA ──────────────────
-            AnimatedVisibility(
-                visible = showRedirectHint,
-                enter   = fadeIn() + slideInVertically { it / 3 }
-            ) {
-                CmsRedirectCard(
-                    url     = AIRTEL_CMS_URL,
-                    context = context
-                )
-            }
-
-            // ── Note ─────────────────────────
-            Surface(
-                shape    = RoundedCornerShape(10.dp),
-                color    = colorScheme.secondaryContainer.copy(alpha = 0.5f),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    verticalAlignment     = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                // ── Redirect CTA ──────────────────
+                AnimatedVisibility(
+                    visible = showRedirectHint,
+                    enter   = fadeIn() + slideInVertically { it / 3 }
                 ) {
-                    Icon(Icons.Default.Info, null,
-                        tint     = colorScheme.onSecondaryContainer,
-                        modifier = Modifier.size(16.dp))
-                    Text(
-                        "You will be redirected to the official Airtel CMS portal in your default browser. Please ensure you have your Airtel credentials ready.",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = colorScheme.onSecondaryContainer
+                    CmsRedirectCard(
+                        url     = AIRTEL_CMS_URL,
+                        context = context
                     )
                 }
-            }
 
-            Spacer(Modifier.height(8.dp))
+                // ── Note ─────────────────────────
+                Surface(
+                    shape    = RoundedCornerShape(10.dp),
+                    color    = colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment     = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(Icons.Default.Info, null,
+                            tint     = colorScheme.onSecondaryContainer,
+                            modifier = Modifier.size(16.dp))
+                        Text(
+                            "You will be redirected to the official Airtel CMS portal in your default browser. Please ensure you have your Airtel credentials ready.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
+            }
         }
     }
 }

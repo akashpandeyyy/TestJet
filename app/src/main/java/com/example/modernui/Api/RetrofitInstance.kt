@@ -1,6 +1,8 @@
 package com.example.modernui.Api
 
 import android.content.Context
+import com.example.modernui.Api.model.RequestInterceptor
+import com.example.modernui.Api.model.ResponseInterceptor
 import com.example.modernui.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -28,9 +30,8 @@ object RetrofitInstance {
 
         appContext?.let {
             builder.addInterceptor(RequestInterceptor(it))
+            builder.addInterceptor(ResponseInterceptor(it))
         }
-        
-        builder.addInterceptor(ResponseInterceptor())
         
         if (BuildConfig.DEBUG) {
             builder.addInterceptor(HttpLoggingInterceptor().apply {

@@ -6,9 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -19,15 +17,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.modernui.ui.screens.login.UserViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.modernui.ui.theme.AppColors
 
 @Composable
 fun WalletScreen(
-    viewModel: UserViewModel,
+    viewModel: WalletViewModel = hiltViewModel(),
     onMenuClick: () -> Unit = {}
 ) {
-    val uiState by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsState()
     val colorScheme = MaterialTheme.colorScheme
 
     Column(
@@ -54,56 +52,83 @@ fun WalletScreen(
                 modifier = Modifier.padding(start = 8.dp)
             )
             Spacer(Modifier.weight(1f))
-            IconButton(onClick = {}) {
-                Icon(Icons.Default.Notifications, "Notifications", tint = Color.White)
+            IconButton(onClick = { viewModel.loadWalletData() }) {
+                Icon(Icons.Default.Refresh, "Refresh", tint = Color.White)
             }
         }
 
-        // --- CONTENT ---
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-        ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = colorScheme.primaryContainer),
-                shape = RoundedCornerShape(24.dp)
-            ) {
-                Column(modifier = Modifier.padding(24.dp)) {
-                    Text("Total Balance", style = MaterialTheme.typography.labelMedium)
-                    Text("₹24,500.00", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(onClick = {}, modifier = Modifier.weight(1f)) { Text("Send") }
-                        FilledTonalButton(onClick = {}, modifier = Modifier.weight(1f)) { Text("Receive") }
-                    }
-                }
+        if (state.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-            Text("Recent Transactions", style = MaterialTheme.typography.titleLarge)
-            Spacer(modifier = Modifier.height(8.dp))
-
-            repeat(5) {
-                ListItem(
-                    headlineContent = { Text("Grocery Store") },
-                    supportingContent = { Text("Oct 24, 2023") },
-                    trailingContent = { Text("-₹45.00", color = colorScheme.error) },
-                    leadingContent = {
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = colorScheme.secondaryContainer
+        } else {
+            // --- CONTENT ---
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp)
+            ) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = colorScheme.primaryContainer),
+                    shape = RoundedCornerShape(24.dp)
+                ) {
+                    Column(modifier = Modifier.padding(24.dp)) {
+                        Text("Total Balance", style = MaterialTheme.typography.labelMedium)
+                        Text(
+                            text = state.balance,
+                            style = MaterialTheme.typography.displaySmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(Icons.Default.ShoppingCart, null, modifier = Modifier.padding(8.dp))
+                            Button(onClick = {}, modifier = Modifier.weight(1f)) { Text("Send") }
+                            FilledTonalButton(onClick = {}, modifier = Modifier.weight(1f)) { Text("Receive") }
                         }
                     }
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+                Text("Recent Transactions", style = MaterialTheme.typography.titleLarge)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                state.transactions.forEach { transaction ->
+                    ListItem(
+                        headlineContent = { Text(transaction.title) },
+                        supportingContent = { Text(transaction.date) },
+                        trailingContent = {
+                            Text(
+                                text = transaction.amount,
+                                color = if (transaction.isDebit) colorScheme.error else Color(0xFF2E7D32)
+                            )
+                        },
+                        leadingContent = {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = colorScheme.secondaryContainer
+                            ) {
+                                Icon(
+                                    imageVector = if (transaction.isDebit) Icons.Default.ArrowOutward else Icons.Default.ArrowDownward,
+                                    contentDescription = null,
+                                    modifier = Modifier.padding(8.dp)
+                                )
+                            }
+                        }
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                }
+
+                if (state.error != null) {
+                    Text(
+                        text = state.error!!,
+                        color = colorScheme.error,
+                        modifier = Modifier.padding(top = 16.dp)
+                    )
+                }
             }
         }
     }

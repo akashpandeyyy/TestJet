@@ -18,9 +18,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.modernui.Api.LoginData
-import com.example.modernui.Api.MyUserData
-import com.example.modernui.Api.UserResponse
+import com.example.modernui.Api.model.LoginData
+import com.example.modernui.Api.model.MyUserData
+import com.example.modernui.Api.model.UserResponse
 import com.example.modernui.ui.screens.login.UiState
 import com.example.modernui.ui.screens.login.UserViewModel
 import com.example.modernui.ui.theme.AppColors

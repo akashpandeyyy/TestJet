@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.modernui.ui.components.*
 import com.example.modernui.ui.theme.FintechColors
 import kotlinx.coroutines.delay
@@ -125,12 +126,17 @@ private val mockPayoutBanks = listOf(
 
 @Composable
 fun MoveToBankScreen(
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    viewModel: MtbViewModel = hiltViewModel()
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
     // ── State ─────────────────────────────────
-    var banks           by remember { mutableStateOf(mockPayoutBanks) }
+    val banks by viewModel.banks.collectAsState()
+    val balance by viewModel.balance.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.errorMessage.collectAsState()
+
     var showAddSheet    by remember { mutableStateOf(false) }
     var selectedBank    by remember { mutableStateOf<PayoutBank?>(null) }
     var showPayDialog   by remember { mutableStateOf(false) }
@@ -140,7 +146,7 @@ fun MoveToBankScreen(
         AddPayoutBankSheet(
             onDismiss  = { showAddSheet = false },
             onBankAdded = { newBank ->
-                banks        = banks + newBank
+                // Typically you'd call a ViewModel method to add a bank
                 showAddSheet = false
             }
         )
@@ -153,6 +159,9 @@ fun MoveToBankScreen(
             onDismiss = {
                 showPayDialog = false
                 selectedBank  = null
+            },
+            onPaySubmit = { amount, mode, onResult ->
+                viewModel.performTransfer(selectedBank!!, amount, mode, onResult)
             }
         )
     }
@@ -168,6 +177,12 @@ fun MoveToBankScreen(
             title       = "Move to Bank",
             onBackClick = onBackClick,
             actions     = {
+                Text(
+                    text = balance,
+                    color = Color.White,
+                    modifier = Modifier.padding(end = 8.dp),
+                    style = MaterialTheme.typography.labelLarge
+                )
                 IconButton(onClick = { showAddSheet = true }) {
                     Icon(Icons.Default.Add, "Add Bank", tint = Color.White)
                 }
@@ -679,13 +694,15 @@ fun AddPayoutBankSheet(
 @Composable
 fun PayTransferDialog(
     bank:      PayoutBank,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onPaySubmit: (String, TransferMode, (Boolean, String) -> Unit) -> Unit = { _, _, _ -> }
 ) {
     var step         by remember { mutableStateOf(PayDialogStep.AMOUNT_MODE) }
     var amount       by remember { mutableStateOf("") }
     var selectedMode by remember { mutableStateOf(TransferMode.IMPS) }
     var isSuccess    by remember { mutableStateOf(true) }
     val txnRef       = remember { "MTB${System.currentTimeMillis().toString().takeLast(9)}" }
+    var resultMessage by remember { mutableStateOf("") }
 
     val amountError = amount.isNotEmpty() && (amount.toDoubleOrNull() ?: 0.0) <= 0.0
     val isAmountReady = amount.isNotEmpty() && !amountError
@@ -697,12 +714,11 @@ fun PayTransferDialog(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            shape  = RoundedCornerShape(24.dp),
-            color  = MaterialTheme.colorScheme.surface
+                .padding(16.dp),
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surface
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
-
                 // ── Dialog top bar ────────────
                 Box(
                     modifier = Modifier
@@ -892,7 +908,14 @@ fun PayTransferDialog(
                                     ) { Text("Cancel") }
 
                                     Button(
-                                        onClick  = { step = PayDialogStep.PROCESSING },
+                                        onClick  = {
+                                            step = PayDialogStep.PROCESSING
+                                            onPaySubmit(amount, selectedMode) { success, msg ->
+                                                isSuccess = success
+                                                resultMessage = msg
+                                                step = PayDialogStep.RESULT
+                                            }
+                                        },
                                         modifier = Modifier.weight(1f).height(44.dp),
                                         shape    = RoundedCornerShape(10.dp),
                                         colors   = ButtonDefaults.buttonColors(
@@ -909,11 +932,6 @@ fun PayTransferDialog(
 
                         // STEP 4 ── Processing
                         PayDialogStep.PROCESSING -> {
-                            LaunchedEffect(Unit) {
-                                delay(2200)
-                                isSuccess = true   // change to false to test failure
-                                step      = PayDialogStep.RESULT
-                            }
                             Column(
                                 modifier            = Modifier.padding(40.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,

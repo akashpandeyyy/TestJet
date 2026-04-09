@@ -15,6 +15,8 @@ object ApiEndpoints {
         const val USER_LOGIN = "login/userLogin"
         const val  USER_ValidateSession = "login/validateSession"
         const val VALIDATE_OTP = "login/validateOtp"
+
+
     }
 
     object Recharge {
@@ -23,7 +25,7 @@ object ApiEndpoints {
     }
 
     object User {
-        const val FETCH_USER_BALANCE = "user/fetchUserBalance"
+        const val FETCH_USER_BALANCE = "common/fetchTotalPanelBalance"
         const val BANKS = "user/banks"
     }
 
@@ -37,5 +39,14 @@ object ApiEndpoints {
         const val MTB = "common/fetchPayoutUserBank/NA"
 
 
+    }
+    object CMS {
+        const val CMS = "aeps/generateCmsLink"
+
+
+    }
+    object Insurance
+    {
+        const val Insurance="insurance/lead"
     }
 }
