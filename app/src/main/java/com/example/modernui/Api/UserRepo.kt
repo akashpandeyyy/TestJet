@@ -54,6 +54,8 @@ class UserRepo @Inject constructor(
         return apiService.checkAepsStatus()
     }
 
+    val userSessionFlow = sessionManager.userSessionFlow
+
     suspend fun doRecharge(request: Map<String, String>): UserResponse {
         return apiService.doRecharge(request)
     }
@@ -77,8 +79,12 @@ class UserRepo @Inject constructor(
     suspend fun fetchMtbData(): UserResponse {
         return apiService.fetchMtbData()
     }
-    suspend fun cmsscreen(): Cmsresponce  {
+    suspend fun cmsscreen(): Cmsresponce {
         return apiService.cmsscreen()
+    }
+
+    suspend fun insuranceLead(): com.example.modernui.Api.model.InsuranceResponse {
+        return apiService.insuranceLead()
     }
 
     // validate user otp

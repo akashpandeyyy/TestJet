@@ -370,7 +370,9 @@ private fun ServiceGridItem(
 @Composable
 fun HomeDrawerContent(
     userName: String = "User",
-    onClose: () -> Unit = {}
+    onClose: () -> Unit = {},
+    onProfileClick: () -> Unit = {},
+    onLogoutClick: () -> Unit = {}
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -404,11 +406,17 @@ fun HomeDrawerContent(
 
         // Items
         Spacer(Modifier.height(12.dp))
-        DrawerItem(Icons.Default.Home,      "Dashboard", true)
-        DrawerItem(Icons.Default.AccountCircle, "Profile")
+        DrawerItem(Icons.Default.Home,      "Dashboard", true, onClick = onClose)
+        DrawerItem(Icons.Default.AccountCircle, "Profile", onClick = {
+            onClose()
+            onProfileClick()
+        })
         HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp, horizontal = 16.dp), thickness = 0.5.dp)
         DrawerItem(Icons.AutoMirrored.Filled.Help,      "Support & Help")
-        DrawerItem(Icons.AutoMirrored.Filled.Logout,    "Logout", textColor = PowerRed)
+        DrawerItem(Icons.AutoMirrored.Filled.Logout,    "Logout", textColor = PowerRed, onClick = {
+            onClose()
+            onLogoutClick()
+        })
     }
 }
 
@@ -417,13 +425,14 @@ private fun DrawerItem(
     icon:      ImageVector,
     label:     String,
     selected:  Boolean = false,
-    textColor: Color   = Color.Unspecified
+    textColor: Color   = Color.Unspecified,
+    onClick:   () -> Unit = {}
 ) {
     NavigationDrawerItem(
         icon = { Icon(icon, contentDescription = null) },
         label = { Text(label, color = if (selected) MaterialTheme.colorScheme.primary else textColor) },
         selected = selected,
-        onClick = { },
+        onClick = onClick,
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
         colors = NavigationDrawerItemDefaults.colors(
             unselectedContainerColor = Color.Transparent

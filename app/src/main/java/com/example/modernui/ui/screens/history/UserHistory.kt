@@ -95,11 +95,10 @@ fun HistoryContent(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(55.dp)
+                .height(64.dp)
                 .background(AppColors.NavyAlpha)
-                .padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                .padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onMenuClick) {
                 Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.White)
@@ -109,7 +108,7 @@ fun HistoryContent(
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 8.dp)
+                modifier = Modifier.padding(start = 12.dp)
             )
             Spacer(Modifier.weight(1f))
             IconButton(onClick = {}) {
@@ -123,60 +122,64 @@ fun HistoryContent(
             edgePadding = 16.dp,
             containerColor = Color.Transparent,
             divider = {},
-            indicator = {}
+            indicator = {},
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
         ) {
             filterOptions.forEach { label ->
                 FilterChip(
                     selected = selectedFilter == label,
                     onClick = { selectedFilter = label },
-                    label = { Text(label) },
-                    modifier = Modifier.padding(horizontal = 4.dp)
+                    label = { Text(label, style = MaterialTheme.typography.labelMedium) },
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                    shape = RoundedCornerShape(12.dp)
                 )
             }
         }
 
-        HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.4f))
+        HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.3f))
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 16.dp)
+            contentPadding = PaddingValues(bottom = 24.dp)
         ) {
             items(filtered) { tx ->
                 ListItem(
+                    modifier = Modifier.fillMaxWidth(),
                     headlineContent = {
-                        Text(tx.title, fontWeight = FontWeight.Medium)
+                        Text(tx.title, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyLarge)
                     },
                     supportingContent = {
-                        Column {
-                            Text(tx.date, style = MaterialTheme.typography.bodySmall)
-                            Spacer(Modifier.height(2.dp))
-                            AssistChip(
-                                onClick = {},
-                                label = {
-                                    Text(
-                                        tx.category,
-                                        style = MaterialTheme.typography.labelSmall
-                                    )
-                                },
-                                modifier = Modifier.height(22.dp)
-                            )
+                        Column(modifier = Modifier.padding(top = 4.dp)) {
+                            Text(tx.date, style = MaterialTheme.typography.bodySmall, color = colorScheme.onSurfaceVariant)
+                            Spacer(Modifier.height(6.dp))
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = colorScheme.secondaryContainer.copy(alpha = 0.5f)
+                            ) {
+                                Text(
+                                    text = tx.category,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                    color = colorScheme.onSecondaryContainer
+                                )
+                            }
                         }
                     },
                     trailingContent = {
                         Text(
                             tx.amount,
-                            color = if (tx.isCredit) colorScheme.primary else colorScheme.error,
+                            color = if (tx.isCredit) Color(0xFF2E7D32) else Color(0xFFD32F2F),
                             fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.titleMedium
                         )
                     },
                     leadingContent = {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = if (tx.isCredit)
-                                colorScheme.primaryContainer
+                                Color(0xFFE8F5E9)
                             else
-                                colorScheme.secondaryContainer
+                                Color(0xFFFFEBEE)
                         ) {
                             Icon(
                                 imageVector = if (tx.isCredit)
@@ -185,15 +188,18 @@ fun HistoryContent(
                                     Icons.Default.ArrowUpward,
                                 contentDescription = null,
                                 tint = if (tx.isCredit)
-                                    colorScheme.primary
+                                    Color(0xFF2E7D32)
                                 else
-                                    colorScheme.error,
-                                modifier = Modifier.padding(8.dp)
+                                    Color(0xFFD32F2F),
+                                modifier = Modifier.padding(10.dp).size(24.dp)
                             )
                         }
                     }
                 )
-                HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.5f))
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    color = colorScheme.outlineVariant.copy(alpha = 0.4f)
+                )
             }
         }
     }
