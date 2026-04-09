@@ -6,6 +6,7 @@ import com.example.modernui.Api.ApiEndpoints.Login.USER_LOGIN
 import com.example.modernui.Api.ApiEndpoints.Login.USER_ValidateSession
 import com.example.modernui.Api.ApiEndpoints.Aeps.AEPS_STATUS_APP
 import com.example.modernui.Api.ApiEndpoints.CMS.CMS
+import com.example.modernui.Api.ApiEndpoints.Insurance.Insurance as INSURANCE_ENDPOINT
 import com.example.modernui.Api.ApiEndpoints.Aeps.TRANSACTION as AEPS_TRANSACTION
 import com.example.modernui.Api.ApiEndpoints.Recharge.TRANSACTION as RECHARGE_TRANSACTION
 import com.example.modernui.Api.ApiEndpoints.Recharge.MOBILE_PLANS
@@ -14,6 +15,7 @@ import com.example.modernui.Api.ApiEndpoints.User.BANKS
 import com.example.modernui.Api.ApiEndpoints.MTB.MTB as MTB_ENDPOINT
 import com.example.modernui.Api.ApiEndpoints.Login.VALIDATE_OTP
 import com.example.modernui.Api.model.Cmsresponce
+import com.example.modernui.Api.model.InsuranceResponse
 import com.example.modernui.Api.model.LoginRequest
 import com.example.modernui.Api.model.UserResponse
 import com.example.modernui.Api.model.ValidateUser
@@ -55,9 +57,6 @@ interface ApiService {
     suspend fun checkAepsStatus(): TwoFAresponce
 
 
-    @GET("posts")
-    suspend fun getQuotes(@Query("page") page: Int): PagingResponceModel
-
     // Recharge APIs
     @POST(RECHARGE_TRANSACTION)
     suspend fun doRecharge(
@@ -89,4 +88,11 @@ interface ApiService {
     @GET(CMS)
     suspend fun cmsscreen(): Cmsresponce
 
+    // Insurance APIs
+    @GET(INSURANCE_ENDPOINT)
+    suspend fun insuranceLead(): InsuranceResponse
+
 }
+
+//@GET("posts")
+//suspend fun getQuotes(@Query("page") page: Int): PagingResponceModel

@@ -7,11 +7,13 @@ import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
+import android.hardware.usb.UsbManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -37,6 +39,8 @@ import androidx.compose.ui.unit.sp
 import com.example.modernui.ui.components.intentpackage.RdHelper
 import com.example.modernui.ui.theme.FintechColors
 import com.example.modernui.ui.theme.ModernUITheme
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.delay
 
 // ─────────────────────────────────────────────
@@ -56,7 +60,8 @@ data class TwoFaConfig(
     val serviceIcon:   ImageVector   = Icons.Default.Security,
     val serviceColor:  Color         = FintechColors.NavyDark,
     val mobile:        String        = "",
-    val steps:         List<TwoFaStep> = listOf(TwoFaStep.FACE_VERIFICATION)
+    val steps:         List<TwoFaStep> = listOf(TwoFaStep.FACE_VERIFICATION),
+    val selectedDevice: String        = "face" // Added to support multiple devices from RdHelper
 )
 
 // ─────────────────────────────────────────────
@@ -78,42 +83,103 @@ enum class TwoFaState {
 fun TwoFactorAuthScreen(
     config:      TwoFaConfig  = TwoFaConfig(),
     onVerified:  () -> Unit   = {},
-    onBackClick: () -> Unit   = {}
+    onBackClick: () -> Unit   = {},
+    viewModel:   TwoFaViewModel = hiltViewModel()
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val context = LocalContext.current
+    
+    val uiState by viewModel.uiState.collectAsState()
+    val selectedDeviceId by viewModel.selectedDeviceId.collectAsState()
 
-    var twoFaState by remember { mutableStateOf(TwoFaState.IDLE) }
-    var failMessage by remember { mutableStateOf("") }
-
-    // Launcher to handle the RD service intent result in the same activity
-    val faceCaptureLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        val responseData = result.data?.getStringExtra(RdHelper.INTENT_EXTRA_RESPONSE) ?: ""
-        Log.d("TwoFaScreen", "Face RD Response: $responseData")
-
-        if (result.resultCode == Activity.RESULT_OK) {
-            // Refined XML Parsing using Regex to extract errCode and errInfo
-            val errCodeMatch = Regex("errCode=\"([^\"]*)\"").find(responseData)
-            val errCode = errCodeMatch?.groupValues?.get(1)
-
-            if (errCode == "0") {
-                twoFaState = TwoFaState.ALL_DONE
-            } else {
-                val errInfoMatch = Regex("errInfo=\"([^\"]*)\"").find(responseData)
-                val errInfo = errInfoMatch?.groupValues?.get(1) ?: "Verification Failed"
-                failMessage = "$errInfo (Code: $errCode)"
-                twoFaState = TwoFaState.FAILED
+    // Listen for USB device connection
+    DisposableEffect(Unit) {
+        val receiver = object : android.content.BroadcastReceiver() {
+            override fun onReceive(context: android.content.Context, intent: android.content.Intent) {
+                if (UsbManager.ACTION_USB_DEVICE_ATTACHED == intent.action) {
+                    Toast.makeText(context, "Biometric Device Connected", Toast.LENGTH_SHORT).show()
+                }
             }
-        } else {
-            failMessage = "Face verification was cancelled or the RD service failed to respond."
-            twoFaState = TwoFaState.FAILED
+        }
+        val filter = android.content.IntentFilter(UsbManager.ACTION_USB_DEVICE_ATTACHED)
+        context.registerReceiver(receiver, filter)
+        onDispose {
+            context.unregisterReceiver(receiver)
         }
     }
 
-    LaunchedEffect(twoFaState) {
-        if (twoFaState == TwoFaState.ALL_DONE) {
+    // Launcher to handle the RD service intent result in the same activity
+//    val faceCaptureLauncher = rememberLauncherForActivityResult(
+//        contract = ActivityResultContracts.StartActivityForResult()
+//    ) { result ->
+//        val outputKey = RdHelper.getOutputKey(selectedDeviceId)
+//        val responseData = result.data?.getStringExtra("response") ?: ""
+//
+//        Log.d("TwoFaScreen", "RD Service Result: Code=${result.resultCode}, Key=$outputKey, DataLength=${responseData.length}")
+//
+//        if (result.resultCode == Activity.RESULT_OK) {
+//            if (responseData.isNotEmpty()) {
+//                viewModel.handleRdServiceResult(responseData)
+//            } else {
+//                // Some devices might put data in different extras or as a URI, but PID_DATA is standard for Biometric
+//                // and "response" for UIDAI Face RD.
+//                Toast.makeText(context, "Device returned empty data ($outputKey)", Toast.LENGTH_SHORT).show()
+//                viewModel.resetState()
+//            }
+//        } else {
+//            viewModel.resetState()
+//            Toast.makeText(context, "Verification Cancelled", Toast.LENGTH_SHORT).show()
+//        }
+//    }
+//    val faceCaptureLauncher = rememberLauncherForActivityResult(
+//        contract = ActivityResultContracts.StartActivityForResult()
+//    ) { result ->
+//        // Yahan check karo ki result.data null toh nahi hai
+//        val dataIntent = result.data
+//
+//        // Sabse safe tareeka: Dono keys check kar lo
+//        val responseData = dataIntent?.getStringExtra("PID_DATA")
+//            ?: dataIntent?.getStringExtra("response")
+//            ?: ""
+//
+//        Log.d("TwoFaScreen", "Final Response Data: $responseData")
+//
+//        if (result.resultCode == Activity.RESULT_OK && responseData.isNotEmpty()) {
+//            viewModel.handleRdServiceResult(responseData)
+//        } else {
+//            viewModel.resetState()
+//            Toast.makeText(context, "Data not captured or device busy", Toast.LENGTH_SHORT).show()
+//        }
+//    }
+    val faceCaptureLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val dataIntent = result.data
+
+        // 1. Dynamic Key nikalna: selectedDeviceId ke basis par "response" ya "PID_DATA"
+        val outputKey = RdHelper.getOutputKey(selectedDeviceId)
+
+        // 2. Data Fetching (Serialization): Sabhi scenarios handle karne ke liye
+        val responseData = dataIntent?.getStringExtra(outputKey) ?: ""
+
+        Log.d("TwoFaScreen", "Capture Result: Code=${result.resultCode}, KeyUsed=$outputKey, DataFound=${responseData.isNotEmpty()}")
+
+        if (result.resultCode == Activity.RESULT_OK) {
+            if (responseData.isNotEmpty()) {
+                // Biometric captured, ab ViewModel is XML ko parse/process karega
+                viewModel.handleRdServiceResult(responseData)
+            } else {
+                Toast.makeText(context, "Device returned empty data ($outputKey)", Toast.LENGTH_SHORT).show()
+                viewModel.resetState()
+            }
+        } else {
+            viewModel.resetState()
+            Toast.makeText(context, "Verification Cancelled", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    LaunchedEffect(uiState) {
+        if (uiState is TwoFaUiState.Success) {
             delay(800)
             onVerified()
         }
@@ -130,7 +196,7 @@ fun TwoFactorAuthScreen(
             title       = config.title,
             onBackClick = onBackClick,
             config      = config,
-            allDone     = twoFaState == TwoFaState.ALL_DONE
+            allDone     = uiState is TwoFaUiState.Success
         )
 
         Column(
@@ -144,70 +210,88 @@ fun TwoFactorAuthScreen(
             // ── Service context card ──────────
             ServiceContextCard(config = config)
 
+            // ── Device Selection ──────────────
+            DeviceSelectionCard(
+                selectedId = selectedDeviceId,
+                onDeviceSelected = { id ->
+                    viewModel.onDeviceSelected(id)
+                    val deviceName = RdHelper.SUPPORTED_DEVICES.find { it.id == id }?.name ?: "Device"
+                    Toast.makeText(context, "$deviceName selected", Toast.LENGTH_SHORT).show()
+                }
+            )
+
             // ── Step content ──────────────────
             AnimatedContent(
-                targetState    = twoFaState,
+                targetState    = uiState,
                 transitionSpec = {
                     fadeIn(tween(250)) togetherWith fadeOut(tween(200))
                 },
                 label = "twofa_content"
             ) { state ->
                 when (state) {
-                    TwoFaState.IDLE -> {
+                    is TwoFaUiState.Idle -> {
+                        val currentDevice = RdHelper.SUPPORTED_DEVICES.find { it.id == selectedDeviceId } 
+                            ?: RdHelper.SUPPORTED_DEVICES[0]
+
                         FaceVerificationPromptCard(
+                            label = currentDevice.name,
+                            icon = currentDevice.icon,
+
+
                             onProceed = {
-                                val packageName = RdHelper.FACE_RD_PACKAGE
-                                val action = RdHelper.FACE_RD_CAPTURE_ACTION
+                                val packageName = RdHelper.getPackage(selectedDeviceId)
+                                val action = RdHelper.getAction(selectedDeviceId)
+                                val inputKey = RdHelper.getInputKey(selectedDeviceId)
 
-                                try {
-                                    val intent = Intent(action)
-                                    intent.setPackage(packageName)
-
-                                    // UIDAI hamesha PidOptions mangta hai, simple FaceCaptureRequest nahi
-                                    val pidOptionsXml = """
-                                                    <PidOptions env="P" ver="1.0">
-                                                        <CustOpts>
-                                                            <Param name="purpose" value="auth"/>
-                                                            <Param name="requestAdditionalInfo" value="true"/>
-                                                        </CustOpts>
-                                                        <Opts fCount="" fType="" format="0" iCount="" iType="" pCount="1" pType="1" pidVer="2.0" posh="UNKNOWN" timeout="20000" wadh=""/>
-                                                    </PidOptions>
-                                                """.trimIndent()
-
-                                    intent.putExtra(RdHelper.INTENT_EXTRA_REQUEST, pidOptionsXml)
-
-                                    faceCaptureLauncher.launch(intent)
-                                    twoFaState = TwoFaState.VERIFYING
-
-                                } catch (e: Exception) {
-                                    Log.e("TwoFaScreen", "Error: ${e.message}", e)
-
-                                    if (e is android.content.ActivityNotFoundException) {
-                                        Toast.makeText(context, "Face RD not Install. Install it.........", Toast.LENGTH_LONG).show()
-                                        val playStoreIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName"))
-                                        context.startActivity(playStoreIntent)
-                                    } else {
-                                        failMessage = "RD Service failed: ${e.message}"
-                                        twoFaState = TwoFaState.FAILED
-                                    }
+                                val pidType = when(selectedDeviceId) {
+                                    "mfs110", "morpho_l1" -> RdHelper.fingType
+                                    "mantra_mis100v2" -> RdHelper.irisType
+                                    else -> RdHelper.faceType
                                 }
 
+                                val pidOptionsXml = RdHelper.makePidXm(selectedDeviceId, pidType)
+
+                                try {
+                                    val intent = Intent(action).apply {
+                                        setPackage(packageName)
+                                        putExtra(inputKey, pidOptionsXml)
+                                    }
+                                    Log.d("TwoFaScreen", "Launching RD: Device=$selectedDeviceId | Package=$packageName | Key=$inputKey")
+                                    faceCaptureLauncher.launch(intent)
+                                } catch (e: ActivityNotFoundException) {
+                                    Log.e("TwoFaScreen", "RD Service not found: $packageName")
+                                    Toast.makeText(context, "RD Service not installed for $selectedDeviceId", Toast.LENGTH_LONG).show()
+                                    try {
+                                        val playStoreIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName"))
+                                        playStoreIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        context.startActivity(playStoreIntent)
+                                    } catch (ex: Exception) {
+                                        val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$packageName"))
+                                        webIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        context.startActivity(webIntent)
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e("TwoFaScreen", "Error launching RD: ${e.message}")
+                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
                             }
+
+
                         )
                     }
 
-                    TwoFaState.VERIFYING -> {
+                    is TwoFaUiState.Verifying -> {
                         LoadingCard(message = "Processing Verification...")
                     }
 
-                    TwoFaState.FAILED -> {
+                    is TwoFaUiState.Error -> {
                         FailedCard(
-                            message    = failMessage,
-                            onRetry    = { twoFaState = TwoFaState.IDLE }
+                            message    = state.message,
+                            onRetry    = { viewModel.resetState() }
                         )
                     }
 
-                    TwoFaState.ALL_DONE -> {
+                    is TwoFaUiState.Success -> {
                         AllDoneCard(config = config)
                     }
                 }
@@ -219,11 +303,79 @@ fun TwoFactorAuthScreen(
 }
 
 // ─────────────────────────────────────────────
+// DEVICE SELECTION CARD
+// ─────────────────────────────────────────────
+
+@Composable
+fun DeviceSelectionCard(
+    selectedId: String,
+    onDeviceSelected: (String) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Select Verification Device",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                RdHelper.SUPPORTED_DEVICES.forEach { device ->
+                    val isSelected = device.id == selectedId
+                    val bgColor = if (isSelected) FintechColors.NavyDark else Color.Transparent
+                    val contentColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(bgColor)
+                            .clickable { onDeviceSelected(device.id) }
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = device.icon,
+                                contentDescription = null,
+                                tint = contentColor,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Text(
+                                text = device.name.split(" ").first(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = contentColor,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────
 // FACE VERIFICATION PROMPT CARD
 // ─────────────────────────────────────────────
 
 @Composable
-fun FaceVerificationPromptCard(onProceed: () -> Unit) {
+fun FaceVerificationPromptCard(
+    label: String,
+    icon: ImageVector,
+    onProceed: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape    = RoundedCornerShape(24.dp),
@@ -235,20 +387,20 @@ fun FaceVerificationPromptCard(onProceed: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             Icon(
-                Icons.Default.Face,
-                null,
+                imageVector = icon,
+                contentDescription = null,
                 tint = FintechColors.NavyDark,
                 modifier = Modifier.size(64.dp)
             )
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "Face Verification",
+                    text = label,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Confirm your identity using face recognition to proceed.",
+                    text = "Confirm your identity using $label to proceed.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.Gray,
                     textAlign = TextAlign.Center

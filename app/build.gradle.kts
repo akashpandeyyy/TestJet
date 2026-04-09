@@ -119,4 +119,6 @@ dependencies {
     implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
     implementation("androidx.paging:paging-runtime:3.4.2")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    // for the icons
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
 }

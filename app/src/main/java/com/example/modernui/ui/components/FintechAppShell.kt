@@ -39,8 +39,10 @@ import com.example.modernui.ui.screens.aeps.AepsViewModel
 import com.example.modernui.ui.screens.common.TwoFaConfig
 import com.example.modernui.ui.screens.common.TwoFaStep
 import com.example.modernui.ui.screens.common.TwoFactorAuthScreen
+import com.example.modernui.ui.screens.login.UserDetailScreenM3
 import com.example.modernui.ui.screens.login.UserViewModel
 import kotlinx.coroutines.launch
+import com.example.modernui.ui.screens.login.ModernLoginUI
 
 
 
@@ -67,6 +69,8 @@ object Routes {
     const val AIRTEL_CMS       = "airtel_cms"
     const val INSURANCE_DETAIL = "insurance_detail"
     const val TWO_FA           = "two_fa"
+    const val USER_PROFILE     = "user_profile"
+    const val LOGIN            = "login"
 }
 
 // ─────────────────────────────────────────────
@@ -101,9 +105,11 @@ fun serviceRoute(title: String): String? = when (title) {
 
 @Composable
 fun FintechAppShell(
-    viewModel: UserViewModel = hiltViewModel()
+    viewModel: UserViewModel = hiltViewModel(),
+    homeViewModel: HomeViewModel = hiltViewModel()
 ) {
     val navController = rememberNavController()
+    val scope = rememberCoroutineScope()
 
     NavHost(
         navController    = navController,
@@ -114,6 +120,7 @@ fun FintechAppShell(
             val aepsViewModel: AepsViewModel = hiltViewModel()
             FintechAppShellContent(
                 viewModel      = viewModel,
+                homeViewModel  = homeViewModel,
                 onServiceClick = { title ->
                     val route = serviceRoute(title)
                     if (route == Routes.AEPS) {
@@ -123,6 +130,33 @@ fun FintechAppShell(
                         )
                     } else if (route != null) {
                         navController.navigate(route)
+                    }
+                },
+                onProfileClick = {
+                    navController.navigate(Routes.USER_PROFILE)
+                },
+                onLogout = {
+                    homeViewModel.logout()
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(Routes.SHELL) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Routes.USER_PROFILE) {
+            UserDetailScreenM3(
+                viewModel = viewModel,
+                onBackClick = { navController.popBackStack() },
+                onContinueToDashboard = { navController.popBackStack() }
+            )
+        }
+
+        composable(Routes.LOGIN) {
+            ModernLoginUI(
+                onLoginSuccess = {
+                    navController.navigate(Routes.SHELL) {
+                        popUpTo(Routes.LOGIN) { inclusive = true }
                     }
                 }
             )
@@ -227,7 +261,9 @@ fun FintechAppShell(
 fun FintechAppShellContent(
     viewModel: UserViewModel,
     homeViewModel: HomeViewModel = hiltViewModel(),
-    onServiceClick: (String) -> Unit = {}
+    onServiceClick: (String) -> Unit = {},
+    onProfileClick: () -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val drawerState  = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -239,7 +275,15 @@ fun FintechAppShellContent(
         drawerContent = {
             HomeDrawerContent(
                 userName = userName,
-                onClose = { scope.launch { drawerState.close() } }
+                onClose = { scope.launch { drawerState.close() } },
+                onProfileClick = {
+                    scope.launch { drawerState.close() }
+                    onProfileClick()
+                },
+                onLogoutClick = {
+                    scope.launch { drawerState.close() }
+                    onLogout()
+                }
             )
         }
     ) {
@@ -283,7 +327,8 @@ fun FintechAppShellContent(
                         0 -> HomeContent(
                             viewModel      = homeViewModel,
                             onMenuClick    = { scope.launch { drawerState.open() } },
-                            onServiceClick = onServiceClick
+                            onServiceClick = onServiceClick,
+                            onLogout       = onLogout
                         )
                         1 -> WalletScreen(onMenuClick = { scope.launch { drawerState.open() } })
                         2 -> ReportScreen(onMenuClick = { scope.launch { drawerState.open() } })
