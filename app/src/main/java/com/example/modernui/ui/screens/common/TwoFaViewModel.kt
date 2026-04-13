@@ -23,7 +23,7 @@ sealed class TwoFaUiState {
 @HiltViewModel
 class TwoFaViewModel @Inject constructor(
     private val userRepo: UserRepo,
-    private val locationManager:
+
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<TwoFaUiState>(TwoFaUiState.Idle)
@@ -161,8 +161,8 @@ private fun performTwoFaVerification(pidDataXml: String) {
         try {
 
 
-            val userLocation = UserLocation(this)
-            userLocation.fetchAndSaveLocation(this)
+//            val userLocation = UserLocation(this)
+//            userLocation.fetchAndSaveLocation(this)
 
 
 
@@ -171,8 +171,8 @@ private fun performTwoFaVerification(pidDataXml: String) {
                 biometric = pidDataXml,
                 orderId = currentOrderId ?: "",
                 fing = _selectedFinger.value?.value ?: "",
-               latitude = location.latitude.toString(),
-                longitude = location.longitude.toString(),
+               latitude ="10100101",
+                longitude = "1010101",
                 source = "APP"
             )
 
