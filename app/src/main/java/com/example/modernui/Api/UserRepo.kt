@@ -9,7 +9,11 @@ import com.example.modernui.Api.model.balanceresponce
 import com.example.modernui.core.datastore.SessionManager
 import com.example.modernui.ui.screens.aeps.AepsModel
 import com.example.modernui.ui.screens.aeps.AepsModelResponce
-import com.example.modernui.ui.screens.common.TwoFAresponce
+import com.example.modernui.ui.screens.common.model.TwoFAValiResponce
+import com.example.modernui.ui.screens.common.model.TwoFAresponce
+import com.example.modernui.ui.screens.common.model.TwoFaAuthrequest
+import com.example.modernui.ui.screens.common.model.TwoFaFinalAuthResponse
+import com.example.modernui.ui.screens.common.model.TwoFaValidationRequest
 import com.example.modernui.ui.screens.login.otprequest
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -36,6 +40,12 @@ class UserRepo @Inject constructor(
         return response
     }
 
+    //2fa validataion and call
+
+
+
+
+
     suspend fun validateuserLogin(request: LoginRequest): ValidateUser {
         val response = apiService.validateuserLogin(request)
         if (response.status == 1 && response.data != null) {
@@ -50,8 +60,16 @@ class UserRepo @Inject constructor(
         return apiService.validateuserAeps(request)
     }
 
-    suspend fun checkAepsStatus(): TwoFAresponce {
+    suspend fun checkAepsStatus(): TwoFAresponce     {
         return apiService.checkAepsStatus()
+    }
+    suspend fun validatetoken(request : TwoFaValidationRequest): TwoFAValiResponce {
+        return apiService.validatetoken(request)
+    }
+
+
+    suspend fun validateTwoFAfinal(request : TwoFaAuthrequest): TwoFaFinalAuthResponse {
+        return apiService.validateTwoFAfinal(request)
     }
 
     val userSessionFlow = sessionManager.userSessionFlow

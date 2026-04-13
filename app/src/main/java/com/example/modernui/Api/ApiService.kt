@@ -20,10 +20,13 @@ import com.example.modernui.Api.model.LoginRequest
 import com.example.modernui.Api.model.UserResponse
 import com.example.modernui.Api.model.ValidateUser
 import com.example.modernui.Api.model.balanceresponce
-import com.example.modernui.pagination.model.PagingResponceModel
 import com.example.modernui.ui.screens.aeps.AepsModel
 import com.example.modernui.ui.screens.aeps.AepsModelResponce
-import com.example.modernui.ui.screens.common.TwoFAresponce
+import com.example.modernui.ui.screens.common.model.TwoFAValiResponce
+import com.example.modernui.ui.screens.common.model.TwoFAresponce
+import com.example.modernui.ui.screens.common.model.TwoFaAuthrequest
+import com.example.modernui.ui.screens.common.model.TwoFaFinalAuthResponse
+import com.example.modernui.ui.screens.common.model.TwoFaValidationRequest
 import com.example.modernui.ui.screens.login.otprequest
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -55,6 +58,23 @@ interface ApiService {
 
     @GET(AEPS_STATUS_APP)
     suspend fun checkAepsStatus(): TwoFAresponce
+
+
+
+    // TwoFA
+
+    @POST("https://pro.softmintindia.com/sdk/validate2FAToken")
+    suspend fun validatetoken(
+        @Body request: TwoFaValidationRequest
+    ): TwoFAValiResponce
+
+
+    @POST("https://pro.softmintindia.com/sdk/twoFactorAuthentication")
+    suspend fun validateTwoFAfinal(
+        @Body request: TwoFaAuthrequest
+    ): TwoFaFinalAuthResponse
+
+
 
 
     // Recharge APIs

@@ -49,4 +49,9 @@ object ApiEndpoints {
     {
         const val Insurance="insurance/lead"
     }
+//    object 2FA
+//    {
+//        const val 2FAToken="sdk/validate2FAToken"
+//        const val 2FAToken="sdk/validate2FAToken"
+//    }
 }

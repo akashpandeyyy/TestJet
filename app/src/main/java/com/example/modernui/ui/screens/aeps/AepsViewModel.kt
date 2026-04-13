@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.modernui.Api.UserRepo
+import com.example.modernui.ui.screens.common.model.TwoFaValidationRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,29 +40,115 @@ class AepsViewModel @Inject constructor(
     var selectedDevice = MutableStateFlow("face_scan")
 
     fun checkAepsStatusAndNavigate(onNavigateToAeps: () -> Unit, onNavigateTo2FA: () -> Unit) {
+//        viewModelScope.launch {
+//            _uiState.value = AepsUiState.Loading
+//            try {
+//                val response = userRepo.checkAepsStatus()
+////                val response = userRepo.validatetoken()
+//                Log.d("AepsViewModel", "Response: $response")
+//                when (response.status) {
+//                    1 -> {
+//                        _isAepsAuthorized.value = true
+//                        _uiState.value = AepsUiState.Idle
+//                        onNavigateToAeps()
+//                    }
+//                    17 -> {
+//                        var token=response.data
+//                        Log.d("AepsViewModel", "Token: $token")
+//
+//                        try {
+//                            val request = TwoFaValidationRequest(
+//                                token = token as String?
+//                            )
+//                            val response = userRepo.validatetoken(request)
+//                            when (response.status) {
+//                                18 -> {
+//                                }
+//
+//
+//                                isAepsAuthorized.value = false
+//                                        _uiState.value = AepsUiState.Needs2FA
+//
+//                                        onNavigateTo2FA()
+//
+//                                }
+//                        } catch (e: Exception) {
+//                            _uiState.value = AepsUiState.Error(e.message ?: "Status Check Failed")
+//                        }
+//
+//
+//
+//                    }
+//                    else -> {
+//                        _isAepsAuthorized.value = false
+//                        _uiState.value = AepsUiState.Error(response.message ?: "Unauthorized access (Status: ${response.status})")
+//                    }
+//                }
+//            } catch (e: Exception) {
+//                _uiState.value = AepsUiState.Error(e.message ?: "Status Check Failed")
+//            }
+//        }
+
         viewModelScope.launch {
-            _uiState.value = AepsUiState.Loading
+            _uiState.value = AepsUiState.Loading // Hamesha loading se start karo
             try {
-                val response = userRepo.checkAepsStatus()
-                Log.d("AepsViewModel", "Response: $response")
-                when (response.status) {
+                val statusResponse = userRepo.checkAepsStatus()
+                Log.d("AepsViewModel", "Initial Status: ${statusResponse.status}")
+
+                when (statusResponse.status) {
                     1 -> {
+                        // User already authorized hai
                         _isAepsAuthorized.value = true
                         _uiState.value = AepsUiState.Idle
                         onNavigateToAeps()
                     }
+
                     17 -> {
-                        _isAepsAuthorized.value = false
-                        _uiState.value = AepsUiState.Needs2FA
-                        onNavigateTo2FA()
+
+                        val tokenElement = statusResponse.data
+
+                        if (tokenElement != null) {
+                            try {
+                                _uiState.value = AepsUiState.Loading
+
+
+                                val request = TwoFaValidationRequest(token = tokenElement)
+                                Log.d("AepsViewModel", "Token Fixed: $tokenElement")
+                                val validationRes = userRepo.validatetoken(request)
+
+                                when (validationRes.status) {
+                                    18 -> {
+
+                                        _isAepsAuthorized.value = false
+                                        _uiState.value = AepsUiState.Needs2FA
+                                        onNavigateTo2FA()
+                                    }
+                                    else -> {
+                                        _uiState.value = AepsUiState.Error(validationRes.message ?: "2FA Validation Failed")
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                Log.e("AepsViewModel", "API Error: ${e.message}")
+                                _uiState.value = AepsUiState.Error("Network error: ${e.message}")
+                            }
+                        } else {
+                            _uiState.value = AepsUiState.Error("Token missing in status 17")
+                        }
                     }
+
+
+
+
+
+
                     else -> {
                         _isAepsAuthorized.value = false
-                        _uiState.value = AepsUiState.Error(response.message ?: "Unauthorized access (Status: ${response.status})")
+                        _uiState.value = AepsUiState.Error(statusResponse.message ?: "Unauthorized (Status: ${statusResponse.status})")
                     }
                 }
             } catch (e: Exception) {
-                _uiState.value = AepsUiState.Error(e.message ?: "Status Check Failed")
+                Log.e("AepsViewModel", "Error: ${e.message}")
+                _uiState.value = AepsUiState.Error(e.message ?: "Something went wrong")
             }
         }
     }

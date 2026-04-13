@@ -23,5 +23,7 @@ data class AepsModel(
     @SerialName("source")
     val source: String?,
     @SerialName("type")
-    val type: String?
+    val type: String?,
+    @SerialName("fingerIndex")
+    val fingerIndex: String? = null
 )

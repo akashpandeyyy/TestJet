@@ -39,10 +39,11 @@ import com.example.modernui.ui.screens.aeps.AepsViewModel
 import com.example.modernui.ui.screens.common.TwoFaConfig
 import com.example.modernui.ui.screens.common.TwoFaStep
 import com.example.modernui.ui.screens.common.TwoFactorAuthScreen
+import com.example.modernui.ui.screens.login.FintechLoginScreenM3
 import com.example.modernui.ui.screens.login.UserDetailScreenM3
 import com.example.modernui.ui.screens.login.UserViewModel
 import kotlinx.coroutines.launch
-import com.example.modernui.ui.screens.login.ModernLoginUI
+
 
 
 
@@ -153,12 +154,13 @@ fun FintechAppShell(
         }
 
         composable(Routes.LOGIN) {
-            ModernLoginUI(
+            FintechLoginScreenM3(
                 onLoginSuccess = {
                     navController.navigate(Routes.SHELL) {
                         popUpTo(Routes.LOGIN) { inclusive = true }
                     }
-                }
+                },
+                onRegisterClick = { /* Handled by AppNavigation or add Route if needed */ }
             )
         }
 
