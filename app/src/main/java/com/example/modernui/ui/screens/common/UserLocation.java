@@ -62,4 +62,6 @@ public class UserLocation {
         SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         return prefs.getString(KEY_LNG, null);
     }
+
+
 }

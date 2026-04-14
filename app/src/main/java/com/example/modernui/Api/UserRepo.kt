@@ -22,6 +22,7 @@ import javax.inject.Singleton
 @Singleton
 class UserRepo @Inject constructor(
     @MainApi private val apiService: ApiService,
+    @PlaceholderApi private val apiServiceTwoFa: ApiService,
     private val sessionManager: SessionManager,
     @ApplicationContext private val context: Context
 ) {
@@ -64,12 +65,12 @@ class UserRepo @Inject constructor(
         return apiService.checkAepsStatus()
     }
     suspend fun validatetoken(request : TwoFaValidationRequest): TwoFAValiResponce {
-        return apiService.validatetoken(request)
+        return apiServiceTwoFa.validatetoken(request)
     }
 
 
     suspend fun validateTwoFAfinal(request : TwoFaAuthrequest): TwoFaFinalAuthResponse {
-        return apiService.validateTwoFAfinal(request)
+        return apiServiceTwoFa.validateTwoFAfinal(request)
     }
 
     val userSessionFlow = sessionManager.userSessionFlow

@@ -3,6 +3,7 @@ package com.example.modernui.Api
 import android.content.Context
 import com.example.modernui.Api.model.RequestInterceptor
 import com.example.modernui.Api.model.ResponseInterceptor
+import com.example.modernui.Api.twofamodel.TFIntersecptorRequest
 import com.example.modernui.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -15,8 +16,8 @@ object RetrofitInstance {
     private var appContext: Context? = null
     private const val HOST = "bc.finrichtechnology.com"
    // private const val BASE_URL = "https://$HOST/"
-    private const val BASE_URL = "https://b2buat.softmintdigital.com/"
-    private const val BASE_URLL = "https://jsonplaceholder.typicode.com/"
+    private const val BASE_URL = "https://b2buat.softmintdigital.com/"////https://m.softmintdigital.com/
+    private const val BASE_URLL = "https://pro.softmintindia.com/"
 
 
     fun init(context: Context) {
@@ -31,6 +32,7 @@ object RetrofitInstance {
         appContext?.let {
             builder.addInterceptor(RequestInterceptor(it))
             builder.addInterceptor(ResponseInterceptor(it))
+
         }
         
         if (BuildConfig.DEBUG) {
@@ -41,6 +43,26 @@ object RetrofitInstance {
         
         builder.build()
     }
+    private val okHttpClientTwoFA: OkHttpClient by lazy {
+        val builder = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+
+        appContext?.let {
+            builder.addInterceptor(TFIntersecptorRequest(it))
+        }
+
+        if (BuildConfig.DEBUG) {
+            builder.addInterceptor(HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BODY
+            })
+        }
+
+        builder.build()
+    }
+
+
+
 
     val api: ApiService by lazy {
         Retrofit.Builder()
@@ -54,6 +76,7 @@ object RetrofitInstance {
         Retrofit.Builder()
             .baseUrl(BASE_URLL)
             .addConverterFactory(GsonConverterFactory.create())
+            .client(okHttpClientTwoFA)
             .build()
             .create(ApiService::class.java)
     }

@@ -30,6 +30,7 @@ import com.example.modernui.ui.screens.common.model.TwoFaValidationRequest
 import com.example.modernui.ui.screens.login.otprequest
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Headers
 import retrofit2.http.POST
 import retrofit2.http.Query
 
@@ -67,6 +68,7 @@ interface ApiService {
     suspend fun validatetoken(
         @Body request: TwoFaValidationRequest
     ): TwoFAValiResponce
+
 
 
     @POST("https://pro.softmintindia.com/sdk/twoFactorAuthentication")

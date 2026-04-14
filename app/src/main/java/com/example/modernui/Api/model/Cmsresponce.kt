@@ -9,7 +9,7 @@ data class Cmsresponce(
     @SerialName("data")
     val `data`: DataX?,
     @SerialName("errorMessage")
-    val errorMessage: Any?,
+    val errorMessage: String?,
     @SerialName("message")
     val message: String?,
     @SerialName("status")

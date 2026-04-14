@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.modernui.Api.UserRepo
+import com.example.modernui.core.location.UserLocationProvider
 import com.example.modernui.ui.screens.common.model.TwoFaAuthrequest
 import com.example.modernui.ui.screens.common.model.TwoFaValidationRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,6 +24,8 @@ sealed class TwoFaUiState {
 @HiltViewModel
 class TwoFaViewModel @Inject constructor(
     private val userRepo: UserRepo,
+    private val locationProvider: UserLocationProvider,
+    private val prefManager: PrefManager
 
 ) : ViewModel() {
 
@@ -86,6 +89,12 @@ class TwoFaViewModel @Inject constructor(
                     Log.d("TwoFaViewModel", "Token Fixed: $tokenElement")
                     val validationRes = userRepo.validatetoken(request)
                     currentOrderId = validationRes.data?.orderId
+                   val valtoken= validationRes.data?.authToken
+
+                    valtoken?.let {
+                        prefManager.saveToken(it)
+                        Log.d("TwoFaViewModel", "Token Saved: $it")
+                    }
 
 
 
@@ -125,59 +134,34 @@ class TwoFaViewModel @Inject constructor(
         _uiState.value = TwoFaUiState.Idle
     }
 
-//    private fun performTwoFaVerification(pidDataXml: String) {
-//        viewModelScope.launch {
-//            _uiState.value = TwoFaUiState.Verifying
-//            try {
-//
-//
-//                val orderId = currentOrderId ?: ""
-//                val request = TwoFaAuthrequest(
-//
-//                    biometric = pidDataXml,
-//                    orderId = currentOrderId ?: "",
-//                    fing = _selectedFinger.value?.value ?: "",
-//                    latitude = locationManager.getLat(), // instance
-//                    longitude = locationManager.getLng(),
-//                    source = "APP"
-//                )
-//
-//                val response = userRepo.validateTwoFAfinal(request)
-//
-//                if (response.status == 1) {
-//                    _uiState.value = TwoFaUiState.Success(response.message ?: "Verification Successful")
-//                } else {
-//                    _uiState.value = TwoFaUiState.Error(response.message ?: "API Verification Failed")
-//                }
-//            } catch (e: Exception) {
-//                Log.e("TwoFaViewModel", "API Error: ${e.message}", e)
-//                _uiState.value = TwoFaUiState.Error("Network Error: ${e.message}")
-//            }
-//        }
-//    }
-private fun performTwoFaVerification(pidDataXml: String) {
-    viewModelScope.launch {
-        _uiState.value = TwoFaUiState.Verifying
-        try {
+    private fun performTwoFaVerification(pidDataXml: String) {
+        viewModelScope.launch {
+            _uiState.value = TwoFaUiState.Verifying
+            try {
+                // Fetching actual location before API call
+                val location = locationProvider.getCurrentLocation()
 
+                if (location == null) {
+                    _uiState.value = TwoFaUiState.Error("Unable to fetch location. Please enable GPS.")
+                    return@launch
+                }
 
-//            val userLocation = UserLocation(this)
-//            userLocation.fetchAndSaveLocation(this)
+               var  latitude = location.first  // Actual Lat
+               var longitude = location.second // Actual Lng
+                Log.d("TwoFaViewModel", "latitude: $latitude")
+                Log.d("TwoFaViewModel", "longitude: $longitude")
+                val request = TwoFaAuthrequest(
+                    biometric = pidDataXml,
+                    orderId = currentOrderId ?: "",
+                    fing = _selectedFinger.value?.value ?: "",
+                    latitude = location.first,  // Actual Lat
+                    longitude = location.second, // Actual Lng
+                    source = "APP"
 
+                )
 
-
-
-            val request = TwoFaAuthrequest(
-                biometric = pidDataXml,
-                orderId = currentOrderId ?: "",
-                fing = _selectedFinger.value?.value ?: "",
-               latitude ="10100101",
-                longitude = "1010101",
-                source = "APP"
-            )
-
-            val response = userRepo.validateTwoFAfinal(request)
-            Log.e("TwoFaViewModel", "Setup Error: ${response}")
+                val response = userRepo.validateTwoFAfinal(request)
+                Log.d("TwoFaViewModel", "Response: $response")
 
                 if (response.status == 1) {
                     _uiState.value = TwoFaUiState.Success(response.message ?: "Verification Successful")
@@ -185,9 +169,13 @@ private fun performTwoFaVerification(pidDataXml: String) {
                     _uiState.value = TwoFaUiState.Error(response.message ?: "API Verification Failed")
                 }
 
-        } catch (e: Exception) {
-            _uiState.value = TwoFaUiState.Error("Error: ${e.message}")
+            } catch (e: Exception) {
+                _uiState.value = TwoFaUiState.Error("Error: ${e.message}")
+            }
         }
     }
-}
+
+
+
+
 }
