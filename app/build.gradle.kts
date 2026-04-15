@@ -96,6 +96,7 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.generativeai)
+    implementation(libs.androidx.compose.runtime)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.datastore.preferences)
 

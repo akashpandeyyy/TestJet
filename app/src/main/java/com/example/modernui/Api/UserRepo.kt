@@ -1,6 +1,7 @@
 package com.example.modernui.Api
 
 import android.content.Context
+import com.example.modernui.Api.model.BankListResponse
 import com.example.modernui.Api.model.Cmsresponce
 import com.example.modernui.Api.model.LoginRequest
 import com.example.modernui.Api.model.UserResponse
@@ -8,7 +9,8 @@ import com.example.modernui.Api.model.ValidateUser
 import com.example.modernui.Api.model.balanceresponce
 import com.example.modernui.core.datastore.SessionManager
 import com.example.modernui.ui.screens.aeps.AepsModel
-import com.example.modernui.ui.screens.aeps.AepsModelResponce
+//import com.example.modernui.ui.screens.aeps.AepsModelResponce
+import com.example.modernui.ui.screens.aeps.AepsModelResponse
 import com.example.modernui.ui.screens.common.model.TwoFAValiResponce
 import com.example.modernui.ui.screens.common.model.TwoFAresponce
 import com.example.modernui.ui.screens.common.model.TwoFaAuthrequest
@@ -41,11 +43,6 @@ class UserRepo @Inject constructor(
         return response
     }
 
-    //2fa validataion and call
-
-
-
-
 
     suspend fun validateuserLogin(request: LoginRequest): ValidateUser {
         val response = apiService.validateuserLogin(request)
@@ -57,7 +54,7 @@ class UserRepo @Inject constructor(
         return response
     }
 
-    suspend fun validateuserAeps(request: AepsModel): AepsModelResponce {
+    suspend fun validateuserAeps(request: AepsModel): AepsModelResponse {
         return apiService.validateuserAeps(request)
     }
 
@@ -87,7 +84,7 @@ class UserRepo @Inject constructor(
         return apiService.fetchUserBalance()
     }
 
-    suspend fun getBanks(): UserResponse {
+    suspend fun getBanks(): BankListResponse {
         return apiService.getBanks()
     }
 

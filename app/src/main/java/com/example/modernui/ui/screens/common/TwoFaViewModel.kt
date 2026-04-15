@@ -95,12 +95,7 @@ class TwoFaViewModel @Inject constructor(
                         prefManager.saveToken(it)
                         Log.d("TwoFaViewModel", "Token Saved: $it")
                     }
-
-
-
-
                     if (validationRes != null) {
-
 
                         val list = mutableListOf<FingerOption>()
                         if (validationRes.data?.fing1 == true) list.add(FingerOption("AIRTEL", "F1"))

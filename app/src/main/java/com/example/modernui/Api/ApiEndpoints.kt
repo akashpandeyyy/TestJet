@@ -31,7 +31,7 @@ object ApiEndpoints {
 
     object Aeps {
         const val AEPS_STATUS_APP = "aeps/aepsStatus/APP"
-        const val TRANSACTION = "aeps/transaction"
+        const val AEPS_TRANSACTION = "aeps/transaction"
 
 
     }
@@ -54,4 +54,9 @@ object ApiEndpoints {
 //        const val 2FAToken="sdk/validate2FAToken"
 //        const val 2FAToken="sdk/validate2FAToken"
 //    }
+object BankList
+{
+    const val Bank_List="user/banks"
+}
+
 }

@@ -1,6 +1,6 @@
 package com.example.modernui.ui.screens.aeps
 
-import android.content.res.Configuration
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -16,11 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.modernui.ui.components.*
+import com.example.modernui.ui.screens.addharpay.FingerprintScanningAnimation
+import com.example.modernui.ui.screens.addharpay.VerificationFailedBanner
 import com.example.modernui.ui.screens.cashdeposite.DeviceSelectionSheet
 import com.example.modernui.ui.screens.cashdeposite.DeviceStatusBar
 import com.example.modernui.ui.screens.cashdeposite.FingerprintDevice
@@ -50,8 +51,14 @@ fun AepsScreen(
     val selectedBank by viewModel.selectedBank.collectAsState()
     val selectedTxnType by viewModel.selectedTxnType.collectAsState()
     val selectedDevice by viewModel.selectedDevice.collectAsState()
+    val banks by viewModel.banks.collectAsState()
+    val scanState by viewModel.scanState.collectAsState()
 
     var showDeviceSheet by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        viewModel.refreshBanklist()
+    }
 
     // ── Validation ────────────────────────────
     val aadhaarError = aadhaarNumber.isNotEmpty() && aadhaarNumber.length != 12
@@ -59,20 +66,13 @@ fun AepsScreen(
     val amountError  = amount.isNotEmpty() && (amount.toDoubleOrNull() ?: 0.0) <= 0.0
     val isFormValid  = aadhaarNumber.length == 12
             && mobileNumber.length == 10
-            && selectedBank.isNotEmpty()
+            && selectedBank != null
             && selectedTxnType.isNotEmpty()
             && (selectedTxnType == "Balance Enquiry" || selectedTxnType == "Mini Statement"
             || (amount.isNotEmpty() && !amountError))
 
-    val banks = listOf(
-        "State Bank of India", "Punjab National Bank", "Bank of Baroda",
-        "Canara Bank", "HDFC Bank", "ICICI Bank", "Axis Bank",
-        "Union Bank of India", "Indian Bank", "Bank of India"
-    )
-    val txnTypes = listOf(
-        "Cash Withdrawal", "Balance Enquiry", "Mini Statement", "Cash Deposit"
-    )
-    val needsAmount = selectedTxnType == "Cash Withdrawal" || selectedTxnType == "Cash Deposit"
+    val txnTypes = listOf("Cash Withdrawal", "Balance Enquiry", "Mini Statement")
+    val needsAmount = selectedTxnType == "Cash Withdrawal"
 
     val selectedDeviceObj = fingerprintDevices.find { it.id == selectedDevice }
 
@@ -94,15 +94,14 @@ fun AepsScreen(
             .background(colorScheme.background)
             .systemBarsPadding()
     ) {
-        // ── Header ────────────────────────────
+        // Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(55.dp)
                 .background(AppColors.NavyAlpha)
                 .padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBackClick) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
@@ -130,32 +129,49 @@ fun AepsScreen(
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-
             // Handle UI State
             when (val state = uiState) {
-                is AepsUiState.Loading -> {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                }
-                is AepsUiState.Error -> {
-                    Text(state.message, color = colorScheme.error, modifier = Modifier.padding(8.dp))
-                }
-                is AepsUiState.Success -> {
-                    // Handle success UI or side effects
-                }
+                is AepsUiState.Loading -> LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                is AepsUiState.Error -> Text(state.message, color = colorScheme.error, modifier = Modifier.padding(8.dp))
                 else -> {}
             }
 
-            // ── Header banner ─────────────────
             NavyHeaderCard(
                 icon     = Icons.Default.Fingerprint,
                 title    = "Aadhaar Enabled Payment",
                 subtitle = "Biometric authenticated banking"
             )
 
-            // ── Customer Details ──────────────
+            // Biometric Animation Overlay
+            AnimatedVisibility(
+                visible = scanState == VerificationStep.SCANNING || scanState == VerificationStep.ERROR,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (scanState == VerificationStep.SCANNING) {
+                        FingerprintScanningAnimation(
+                            onScanComplete = { success ->
+                                if (success) {
+                                    viewModel.onScanComplete("<PID_DATA_XML_HERE>")
+                                } else {
+                                    viewModel.setScanState(VerificationStep.ERROR)
+                                }
+                            }
+                        )
+                    } else if (scanState == VerificationStep.ERROR) {
+                        VerificationFailedBanner(onRetry = { viewModel.setScanState(VerificationStep.SCANNING) })
+                    }
+                }
+            }
+
             SectionCard(title = "Customer Details", icon = Icons.Default.Person) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-
                     NavyOutlinedField(
                         value         = aadhaarNumber,
                         onValueChange = { viewModel.onAadhaarChange(it) },
@@ -165,45 +181,8 @@ fun AepsScreen(
                         keyboardType  = KeyboardType.Number,
                         maxLength     = 12,
                         isError       = aadhaarError,
-                        errorMessage  = "Aadhaar must be exactly 12 digits",
-                        trailingIcon  = if (aadhaarNumber.length == 12) ({
-                            Icon(Icons.Default.CheckCircle, null,
-                                tint = FintechColors.SuccessGreen)
-                        }) else null
+                        errorMessage  = "Aadhaar must be exactly 12 digits"
                     )
-
-                    // Masked Aadhaar preview
-                    if (aadhaarNumber.length == 12) {
-                        Surface(
-                            shape    = RoundedCornerShape(8.dp),
-                            color    = FintechColors.NavyDark.copy(alpha = 0.07f),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Lock, null,
-                                    tint     = FintechColors.NavyDark,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Text(
-                                    "XXXX XXXX ${aadhaarNumber.takeLast(4)}",
-                                    style      = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color      = FintechColors.NavyDark
-                                )
-                                Spacer(Modifier.weight(1f))
-                                Text(
-                                    "Masked for security",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = colorScheme.outline
-                                )
-                            }
-                        }
-                    }
 
                     NavyOutlinedField(
                         value         = mobileNumber,
@@ -219,10 +198,8 @@ fun AepsScreen(
                 }
             }
 
-            // ── Transaction Details ───────────
             SectionCard(title = "Transaction Details", icon = Icons.Default.AccountBalance) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-
                     NavyDropdownField(
                         label            = "Transaction Type *",
                         leadingIcon      = Icons.Default.SwapHoriz,
@@ -231,15 +208,18 @@ fun AepsScreen(
                         onOptionSelected = { viewModel.onTxnTypeSelected(it) }
                     )
 
+                    // Use NavyDropdownField with Bank names but handle selection as BankItem
                     NavyDropdownField(
                         label            = "Bank Name *",
                         leadingIcon      = Icons.Default.AccountBalance,
-                        selectedValue    = selectedBank,
-                        options          = banks,
-                        onOptionSelected = { viewModel.onBankSelected(it) }
+                        selectedValue    = selectedBank?.bankname ?: "",
+                        options          = banks.map { it.bankname ?: "" },
+                        onOptionSelected = { name ->
+                            banks.find { it.bankname == name }?.let { viewModel.onBankSelected(it) }
+                        }
                     )
-
-                    // Amount — only for Withdrawal / Deposit
+                    val amountValue = amount.toDoubleOrNull() ?: 0.0
+                    val amountError = amount.isNotEmpty() && amountValue < 100
                     if (needsAmount) {
                         NavyOutlinedField(
                             value         = amount,
@@ -249,75 +229,44 @@ fun AepsScreen(
                             leadingIcon   = Icons.Default.CurrencyRupee,
                             keyboardType  = KeyboardType.Decimal,
                             isError       = amountError,
-                            errorMessage  = "Please enter a valid amount"
+                            errorMessage  = "Minimum amount is ₹100"
                         )
-
-                        // Quick amount chips
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("500", "1000", "2000", "5000").forEach { preset ->
-                                FilterChip(
-                                    selected = amount == preset,
-                                    onClick  = { viewModel.onAmountChange(preset) },
-                                    label    = {
-                                        Text(
-                                            "₹$preset",
-                                            style = MaterialTheme.typography.labelSmall
-                                        )
-                                    }
-                                )
-                            }
-                        }
                     }
                 }
             }
 
-            // ── Fingerprint Device ────────────
             SectionCard(title = "Fingerprint Device", icon = Icons.Default.Fingerprint) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     selectedDeviceObj?.let { device ->
-                        SelectedDeviceCard(
-                            device = device,
-                            onClick = { showDeviceSheet = true }
-                        )
+                        SelectedDeviceCard(device = device, onClick = { showDeviceSheet = true })
                     }
-
                     DeviceStatusBar(device = selectedDeviceObj)
                 }
             }
 
-            // ── Submit Button ─────────────────
             Button(
-                onClick = { viewModel.performTransaction() },
-                enabled = isFormValid && uiState !is AepsUiState.Loading,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                onClick = { 
+                    if (selectedDevice == "face_scan") {
+                        viewModel.cusTwoFA()
+                    } else {
+                        viewModel.setScanState(VerificationStep.SCANNING)
+                    }
+                },
+                enabled = isFormValid && uiState !is AepsUiState.Loading && scanState != VerificationStep.SCANNING,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = FintechColors.NavyDark,
-                    contentColor = Color.White
-                )
+                colors = ButtonDefaults.buttonColors(containerColor = FintechColors.NavyDark)
             ) {
                 if (uiState is AepsUiState.Loading) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
                 } else {
                     Text(
                         if (selectedTxnType == "Balance Enquiry") "CHECK BALANCE" else "PROCEED TRANSACTION",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
-            
             Spacer(Modifier.height(20.dp))
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewAepsScreen() {
-    MaterialTheme {
-        AepsScreen(onBackClick = {})
     }
 }
