@@ -100,12 +100,12 @@ fun getInputKey(deviceId: String): String {
 //        return xml
 //    }
 
-    // RdHelper mein makePidXm ko bilkul aise likho (Bina space/newline ke)
+
 //    fun makePidXm(data: PidOptData): String {
 //        return "<PidOptions env=\"P\" ver=\"1.0\"><CustOpts><Param name=\"purpose\" value=\"auth\"/><Param name=\"requestAdditionalInfo\" value=\"true\"/></CustOpts><Opts fCount=\"${data.fCount}\" fType=\"${data.fType}\" format=\"0\" iCount=\"${data.iCount}\" iType=\"0\" pCount=\"1\" pType=\"1\" pidVer=\"2.0\" posh=\"UNKNOWN\" timeout=\"20000\" wadh=\"\"/></PidOptions>"
 //    }
 
-    // 1. Face ke liye XML (As per UIDAI Spec)
+    // 1. Face
     private fun getFaceXml(): String {
         return """<PidOptions env="P" ver="1.0"><CustOpts><Param name="purpose" value="auth"/><Param name="requestAdditionalInfo" value="true"/></CustOpts><Opts fCount="" fType="" format="0" iCount="" iType="" pCount="1" pType="1" pidVer="2.0" posh="UNKNOWN" timeout="20000" wadh=""/></PidOptions>""".trimIndent()
     }
@@ -115,7 +115,7 @@ fun getInputKey(deviceId: String): String {
         return """<PidOptions ver="1.0"> <Opts fCount="${data.fCount}" fType="${data.fType}" iCount="${data.iCount}" pCount="0" format="0" pidVer="2.0" timeout="20000" posh="UNKNOWN" env="$env" wadh=""/> <CustOpts><Param name="mantrakey" value="" /></CustOpts> </PidOptions>""".trimIndent()
     }
 
-    // 3. Main function jo decide karega kaunsa XML bhejna hai
+    // 3. Main function to call above functions
     fun makePidXm(deviceId: String, data: PidOptData): String {
         return if (deviceId == "face") {
             getFaceXml()
@@ -153,7 +153,7 @@ fun getInputKey(deviceId: String): String {
     fun getAction(selectedDevice: String): String {
         return when (selectedDevice) {
             "mfs110", "morpho_l1" -> FP_RD_CAPTURE_ACTION
-            "mantra_mis100v2" -> IRIS_RD_CAPTURE_ACTION // Pehle yahan package name likha tha, jo galat tha
+            "mantra_mis100v2" -> IRIS_RD_CAPTURE_ACTION
             "face" -> FACE_RD_CAPTURE_ACTION
             else -> FACE_RD_CAPTURE_ACTION
         }

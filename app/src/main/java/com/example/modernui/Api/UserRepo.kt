@@ -4,6 +4,7 @@ import android.content.Context
 import com.example.modernui.Api.model.BankListResponse
 import com.example.modernui.Api.model.Cmsresponce
 import com.example.modernui.Api.model.LoginRequest
+import com.example.modernui.Api.model.MtbBankResponse
 import com.example.modernui.Api.model.UserResponse
 import com.example.modernui.Api.model.ValidateUser
 import com.example.modernui.Api.model.balanceresponce
@@ -17,6 +18,9 @@ import com.example.modernui.ui.screens.common.model.TwoFaAuthrequest
 import com.example.modernui.ui.screens.common.model.TwoFaFinalAuthResponse
 import com.example.modernui.ui.screens.common.model.TwoFaValidationRequest
 import com.example.modernui.ui.screens.login.otprequest
+import com.example.modernui.ui.screens.mtb.model.Beniaddrequest
+import com.example.modernui.ui.screens.mtb.model.PayoutRequest
+import com.example.modernui.ui.screens.mtb.model.PayoutResponse
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -92,8 +96,17 @@ class UserRepo @Inject constructor(
         return apiService.fetchIncodeByService(service)
     }
 
-    suspend fun fetchMtbData(): UserResponse {
-        return apiService.fetchMtbData()
+    suspend fun fetchMtbData(userId: String): MtbBankResponse {
+        val url = "${ApiEndpoints.MTB.MTB_LISTED_BANK}$userId"
+        return apiService.fetchMtbData(url)
+    }
+
+    suspend fun addpayoutbank(request : Beniaddrequest): UserResponse {
+        return apiService.addpayoutbank(request)
+    }
+
+    suspend fun payout(request : PayoutRequest): PayoutResponse {
+        return apiService.payout(request)
     }
     suspend fun cmsscreen(): Cmsresponce {
         return apiService.cmsscreen()

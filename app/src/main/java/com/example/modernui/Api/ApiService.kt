@@ -13,12 +13,15 @@ import com.example.modernui.Api.ApiEndpoints.Recharge.TRANSACTION as RECHARGE_TR
 import com.example.modernui.Api.ApiEndpoints.Recharge.MOBILE_PLANS
 import com.example.modernui.Api.ApiEndpoints.User.FETCH_USER_BALANCE
 import com.example.modernui.Api.ApiEndpoints.User.BANKS
-import com.example.modernui.Api.ApiEndpoints.MTB.MTB as MTB_ENDPOINT
 import com.example.modernui.Api.ApiEndpoints.Login.VALIDATE_OTP
+import com.example.modernui.Api.ApiEndpoints.MTB.MTB_ADD_PAYOUT_BANK
+import com.example.modernui.Api.ApiEndpoints.MTB.MTB_LISTED_BANK
+import com.example.modernui.Api.ApiEndpoints.MTB.MTB_PAYOUT
 import com.example.modernui.Api.model.BankListResponse
 import com.example.modernui.Api.model.Cmsresponce
 import com.example.modernui.Api.model.InsuranceResponse
 import com.example.modernui.Api.model.LoginRequest
+import com.example.modernui.Api.model.MtbBankResponse
 import com.example.modernui.Api.model.UserResponse
 import com.example.modernui.Api.model.ValidateUser
 import com.example.modernui.Api.model.balanceresponce
@@ -30,11 +33,15 @@ import com.example.modernui.ui.screens.common.model.TwoFaAuthrequest
 import com.example.modernui.ui.screens.common.model.TwoFaFinalAuthResponse
 import com.example.modernui.ui.screens.common.model.TwoFaValidationRequest
 import com.example.modernui.ui.screens.login.otprequest
+import com.example.modernui.ui.screens.mtb.model.Beniaddrequest
+import com.example.modernui.ui.screens.mtb.model.PayoutRequest
+import com.example.modernui.ui.screens.mtb.model.PayoutResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.POST
 import retrofit2.http.Query
+import retrofit2.http.Url
 
 interface ApiService {
 
@@ -108,8 +115,17 @@ interface ApiService {
     suspend fun fetchIncodeByService(@Query("service") service: String): UserResponse
 
     // MTB APIs
-    @POST(MTB_ENDPOINT)
-    suspend fun fetchMtbData(): UserResponse
+    @POST
+    suspend fun fetchMtbData(@Url url: String): MtbBankResponse
+    @POST(MTB_ADD_PAYOUT_BANK)
+    suspend fun addpayoutbank(
+        @Body request: Beniaddrequest
+    ): UserResponse
+
+    @POST(MTB_PAYOUT)
+    suspend fun payout(
+        @Body request: PayoutRequest
+    ): PayoutResponse
 
     // CMS APIs
     @GET(CMS)

@@ -1,12 +1,13 @@
 package com.example.modernui.ui.screens.mtb
 
-import android.content.res.Configuration
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,12 +25,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.modernui.Api.model.MtbBankData
 import com.example.modernui.ui.components.*
 import com.example.modernui.ui.theme.FintechColors
 import kotlinx.coroutines.delay
@@ -48,6 +49,7 @@ enum class TransferMode(val label: String, val desc: String) {
 
 data class PayoutBank(
     val id:        String,
+
     val name:      String,
     val mobile:    String,
     val accountNo: String,
@@ -66,58 +68,58 @@ enum class PayDialogStep {
     RESULT         // success or failure
 }
 
-private val mockPayoutBanks = listOf(
-    PayoutBank(
-        id        = "pb1",
-        name      = "Rahul Sharma",
-        mobile    = "9876543210",
-        accountNo = "XXXX XXXX 4291",
-        ifsc      = "SBIN0001234",
-        bankName  = "State Bank of India",
-        status    = PayoutBankStatus.ACTIVE,
-        initials  = "RS"
-    ),
-    PayoutBank(
-        id        = "pb2",
-        name      = "Priya Verma",
-        mobile    = "9999123456",
-        accountNo = "XXXX XXXX 8803",
-        ifsc      = "HDFC0005678",
-        bankName  = "HDFC Bank",
-        status    = PayoutBankStatus.ACTIVE,
-        initials  = "PV"
-    ),
-    PayoutBank(
-        id        = "pb3",
-        name      = "Amit Gupta",
-        mobile    = "8888076543",
-        accountNo = "XXXX XXXX 1147",
-        ifsc      = "ICIC0009876",
-        bankName  = "ICICI Bank",
-        status    = PayoutBankStatus.PENDING,
-        initials  = "AG"
-    ),
-    PayoutBank(
-        id        = "pb4",
-        name      = "Sunita Devi",
-        mobile    = "7777654321",
-        accountNo = "XXXX XXXX 3366",
-        ifsc      = "PUNB0004321",
-        bankName  = "Punjab National Bank",
-        status    = PayoutBankStatus.INACTIVE,
-        initials  = "SD"
-    ),
-    PayoutBank(
-        id        = "pb5",
-        name      = "Vikram Singh",
-        mobile    = "6666987654",
-        accountNo = "XXXX XXXX 7712",
-        ifsc      = "BARB0000123",
-        bankName  = "Bank of Baroda",
-        status    = PayoutBankStatus.ACTIVE,
-        initials  = "VS"
-    ),
-)
+//private val mockPayoutBanks = listOf(
+//    PayoutBank(
+//        id        = "pb1",
+//        name      = "Rahul Sharma",
+//        mobile    = "9876543210",
+//        accountNo = "XXXX XXXX 4291",
+//        ifsc      = "SBIN0001234",
+//        bankName  = "State Bank of India",
+//        status    = PayoutBankStatus.ACTIVE,
+//        initials  = "RS"
+//    ),
+//    PayoutBank(
+//        id        = "pb2",
+//        name      = "Priya Verma",
+//        mobile    = "9999123456",
+//        accountNo = "XXXX XXXX 8803",
+//        ifsc      = "HDFC0005678",
+//        bankName  = "HDFC Bank",
+//        status    = PayoutBankStatus.ACTIVE,
+//        initials  = "PV"
+//    ),
+//    PayoutBank(
+//        id        = "pb3",
+//        name      = "Amit Gupta",
+//        mobile    = "8888076543",
+//        accountNo = "XXXX XXXX 1147",
+//        ifsc      = "ICIC0009876",
+//        bankName  = "ICICI Bank",
+//        status    = PayoutBankStatus.PENDING,
+//        initials  = "AG"
+//    ),
+//    PayoutBank(
+//        id        = "pb4",
+//        name      = "Sunita Devi",
+//        mobile    = "7777654321",
+//        accountNo = "XXXX XXXX 3366",
+//        ifsc      = "PUNB0004321",
+//        bankName  = "Punjab National Bank",
+//        status    = PayoutBankStatus.INACTIVE,
+//        initials  = "SD"
+//    ),
+//    PayoutBank(
+//        id        = "pb5",
+//        name      = "Vikram Singh",
+//        mobile    = "6666987654",
+//        accountNo = "XXXX XXXX 7712",
+//        ifsc      = "BARB0000123",
+//        bankName  = "Bank of Baroda",
+//        status    = PayoutBankStatus.ACTIVE,
+//        initials  = "VS"
+//    ),
+//)
 
 
 // ─────────────────────────────────────────────
@@ -138,15 +140,25 @@ fun MoveToBankScreen(
     val error by viewModel.errorMessage.collectAsState()
 
     var showAddSheet    by remember { mutableStateOf(false) }
-    var selectedBank    by remember { mutableStateOf<PayoutBank?>(null) }
+    var selectedBank: MtbBankData? by remember { mutableStateOf(null) }
     var showPayDialog   by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        viewModel.fetchBanks()
+    }
 
     // ── Add Bank Sheet ────────────────────────
     if (showAddSheet) {
         AddPayoutBankSheet(
             onDismiss  = { showAddSheet = false },
             onBankAdded = { newBank ->
-                // Typically you'd call a ViewModel method to add a bank
+                viewModel.addBank(
+                    name = newBank.name,
+                    mobile = newBank.mobile,
+                    accountNo = newBank.accountNo,
+                    ifsc = newBank.ifsc,
+                    bankName = newBank.bankName
+                )
                 showAddSheet = false
             }
         )
@@ -156,10 +168,7 @@ fun MoveToBankScreen(
     if (showPayDialog && selectedBank != null) {
         PayTransferDialog(
             bank      = selectedBank!!,
-            onDismiss = {
-                showPayDialog = false
-                selectedBank  = null
-            },
+            onDismiss = {},
             onPaySubmit = { amount, mode, onResult ->
                 viewModel.performTransfer(selectedBank!!, amount, mode, onResult)
             }
@@ -171,7 +180,6 @@ fun MoveToBankScreen(
             .fillMaxSize()
             .background(colorScheme.background)
     ) {
-
         // ── Top Bar ───────────────────────────
         DetailTopBar(
             title       = "Move to Bank",
@@ -183,73 +191,80 @@ fun MoveToBankScreen(
                     modifier = Modifier.padding(end = 8.dp),
                     style = MaterialTheme.typography.labelLarge
                 )
-                IconButton(onClick = { showAddSheet = true }) {
-                    Icon(Icons.Default.Add, "Add Bank", tint = Color.White)
-                }
             }
         )
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-
-            // ── Header banner ─────────────────
-//            NavyHeaderCard(
-//                icon     = Icons.Default.AccountBalance,
-//                title    = "Move to Bank",
-//                subtitle = "Transfer your wallet balance to a linked bank account"
-//            )
-
-            // ── Wallet balance strip ──────────
-            WalletBalanceStrip(balance = "₹24,500.00")
-
-            // ── List header row ───────────────
-            Row(
-                modifier              = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.CenterVertically
+        Box(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(
-                    "Payout Bank Accounts",
-                    style      = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color      = colorScheme.onBackground
-                )
-                TextButton(onClick = { showAddSheet = true }) {
-                    Icon(Icons.Default.Add, null,
-                        tint     = FintechColors.NavyDark,
-                        modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Add Bank",
-                        color = FintechColors.NavyDark,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold)
+                // ── Wallet balance strip ──────────
+                item {
+                    WalletBalanceStrip(balance = balance)
                 }
-            }
 
-            // ── Bank Cards ────────────────────
-            if (banks.isEmpty()) {
-                EmptyBankListPlaceholder(onAdd = { showAddSheet = true })
-            } else {
-                banks.forEach { bank ->
-                    PayoutBankCard(
-                        bank     = bank,
-                        onPayClick = {
-                            selectedBank  = bank
-                            showPayDialog = true
+                // ── List header row ───────────────
+                item {
+                    Row(
+                        modifier              = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment     = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Payout Bank Accounts",
+                            style      = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color      = colorScheme.onBackground
+                        )
+                        TextButton(onClick = { showAddSheet = true }) {
+                            Icon(Icons.Default.Add, null,
+                                tint     = FintechColors.NavyDark,
+                                modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Add Bank",
+                                color = FintechColors.NavyDark,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold)
                         }
-                    )
+                    }
+                }
+
+                // ── Bank Cards List ────────────────────
+                if (banks?.isEmpty()!! && !isLoading) {
+                    item {
+                        EmptyBankListPlaceholder(onAdd = { showAddSheet = true })
+                    }
+                } else {
+                    items(banks!!) { bank ->
+                        PayoutBankCard(
+                            bank     = bank,
+                            onPayClick = {
+                                selectedBank  = bank
+                                showPayDialog = true
+                            }
+                        )
+                    }
+                }
+
+                // Status legend
+                item {
+                    StatusLegend()
+                }
+
+                item {
+                    Spacer(Modifier.height(8.dp))
                 }
             }
 
-            // Status legend
-            StatusLegend()
-
-            Spacer(Modifier.height(8.dp))
+            // Loading Overlay
+            if (isLoading && banks?.isEmpty()!!) {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = FintechColors.NavyDark
+                )
+            }
         }
     }
 }
@@ -313,7 +328,7 @@ fun WalletBalanceStrip(balance: String) {
 
 @Composable
 fun PayoutBankCard(
-    bank:      PayoutBank,
+    bank:      MtbBankData,
     onPayClick: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -339,22 +354,28 @@ fun PayoutBankCard(
                     modifier = Modifier.size(44.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                        Text(bank.initials,
-                            color      = FintechColors.NavyDark,
-                            fontWeight = FontWeight.Bold,
-                            fontSize   = 14.sp)
+                        bank.name?.let {
+                            Text(it,
+                                color      = FintechColors.NavyDark,
+                                fontWeight = FontWeight.Bold,
+                                fontSize   = 14.sp)
+                        }
                     }
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(bank.name,
-                        style      = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color      = colorScheme.onSurface)
-                    Text(bank.bankName,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = colorScheme.outline)
+                    bank.name?.let {
+                        Text(it,
+                            style      = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color      = colorScheme.onSurface)
+                    }
+                    bank.bankName?.let {
+                        Text(it,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = colorScheme.outline)
+                    }
                 }
-                StatusBadge(status = bank.status)
+                StatusBadge(status = bank.status!!)
             }
 
             Spacer(Modifier.height(12.dp))
@@ -366,17 +387,18 @@ fun PayoutBankCard(
                 modifier              = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                BankDetailItem(Icons.Default.CreditCard, "Account", bank.accountNo, Modifier.weight(1.2f))
-                BankDetailItem(Icons.Default.Numbers, "IFSC", bank.ifsc, Modifier.weight(0.8f))
+                BankDetailItem(Icons.Default.CreditCard, "Account", bank.accountNo!!, Modifier.weight(1.2f))
+                BankDetailItem(Icons.Default.Numbers, "IFSC", bank.ifscCode!!, Modifier.weight(0.8f))
+                BankDetailItem(Icons.Default.Numbers, "BENE ID", bank.beneId!!, Modifier.weight(0.8f))
             }
 
             Spacer(Modifier.height(16.dp))
 
             // ── Row 3: Action button ──
-            val isEnabled = bank.status == PayoutBankStatus.ACTIVE
+            val isEnabled = bank.status
             Button(
                 onClick  = onPayClick,
-                enabled  = isEnabled,
+                enabled  = isEnabled!!,
                 modifier = Modifier.fillMaxWidth().height(44.dp),
                 shape    = RoundedCornerShape(10.dp),
                 colors   = ButtonDefaults.buttonColors(
@@ -417,21 +439,18 @@ fun BankDetailItem(icon: androidx.compose.ui.graphics.vector.ImageVector, label:
 }
 
 @Composable
-fun StatusBadge(status: PayoutBankStatus) {
+fun StatusBadge(status: Boolean) {
+
+
+
     val (bgColor, textColor, dotColor, label) = when (status) {
-        PayoutBankStatus.ACTIVE   -> arrayOf(
+        true   -> arrayOf(
             FintechColors.SuccessGreenLight,
             FintechColors.SuccessGreenDark,
             FintechColors.SuccessGreen,
             "Active"
         )
-        PayoutBankStatus.PENDING  -> arrayOf(
-            Color(0xFFFFF3CD),
-            Color(0xFF856404),
-            Color(0xFFFFC107),
-            "Pending"
-        )
-        PayoutBankStatus.INACTIVE -> arrayOf(
+        false  -> arrayOf(
             MaterialTheme.colorScheme.errorContainer,
             MaterialTheme.colorScheme.error,
             MaterialTheme.colorScheme.error,
@@ -463,32 +482,45 @@ fun StatusBadge(status: PayoutBankStatus) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun StatusLegend() {
     val colorScheme = MaterialTheme.colorScheme
     Surface(
-        shape    = RoundedCornerShape(10.dp),
-        color    = colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        shape = RoundedCornerShape(10.dp),
+        color = colorScheme.surfaceVariant.copy(alpha = 0.5f),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier              = Modifier.padding(12.dp).fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
+        FlowRow(
+            modifier = Modifier
+                .padding(12.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            maxItemsInEachRow = 3
         ) {
             listOf(
-                Pair(FintechColors.SuccessGreen, "Active  — Pay enabled"),
+                Pair(FintechColors.SuccessGreen, "Active — Pay enabled"),
                 Pair(Color(0xFFFFC107), "Pending — Awaiting approval"),
                 Pair(MaterialTheme.colorScheme.error, "Inactive — Cannot pay")
             ).forEach { (color: Color, label: String) ->
                 Row(
-                    verticalAlignment     = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(horizontal = 8.dp)
                 ) {
-                    Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(color))
-                    Text(label,
-                        style    = MaterialTheme.typography.labelSmall,
-                        color    = colorScheme.outline,
-                        fontSize = 10.sp)
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(color)
+                    )
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colorScheme.outline,
+                        fontSize = 10.sp
+                    )
                 }
             }
         }
@@ -669,7 +701,7 @@ fun AddPayoutBankSheet(
                                 id        = "pb_${System.currentTimeMillis()}",
                                 name      = name,
                                 mobile    = mobile,
-                                accountNo = "XXXX XXXX ${accountNo.takeLast(4)}",
+                                accountNo = accountNo,
                                 ifsc      = ifsc,
                                 bankName  = bankName,
                                 status    = PayoutBankStatus.PENDING,
@@ -693,7 +725,7 @@ fun AddPayoutBankSheet(
 
 @Composable
 fun PayTransferDialog(
-    bank:      PayoutBank,
+    bank:      MtbBankData,
     onDismiss: () -> Unit,
     onPaySubmit: (String, TransferMode, (Boolean, String) -> Unit) -> Unit = { _, _, _ -> }
 ) {
@@ -736,6 +768,7 @@ fun PayTransferDialog(
                     ) {
                         Text(
                             when (step) {
+
                                 PayDialogStep.AMOUNT_MODE -> "Transfer Details"
                                 PayDialogStep.PREVIEW     -> "Preview Transfer"
                                 PayDialogStep.CONFIRM     -> "Confirm Transfer"
@@ -1011,7 +1044,7 @@ fun DialogStepDots(current: PayDialogStep) {
 // ─────────────────────────────────────────────
 
 @Composable
-fun DialogRecipientStrip(bank: PayoutBank) {
+fun DialogRecipientStrip(bank: MtbBankData) {
     val colorScheme = MaterialTheme.colorScheme
     Surface(
         shape    = RoundedCornerShape(12.dp),
@@ -1027,12 +1060,12 @@ fun DialogRecipientStrip(bank: PayoutBank) {
                 color    = FintechColors.NavyDark.copy(alpha = 0.12f),
                 modifier = Modifier.size(38.dp)) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Text(bank.initials,
+                    Text(bank.name!!,
                         color = FintechColors.NavyDark, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 }
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text(bank.name,
+                Text(bank.name!!,
                     style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold,
                     color = FintechColors.NavyDark)
                 Text("${bank.bankName}  •  ${bank.accountNo}",
@@ -1094,7 +1127,7 @@ fun TransferModeCard(
 
 @Composable
 fun TransferPreviewCard(
-    bank:   PayoutBank,
+    bank:   MtbBankData,
     amount: String,
     mode:   TransferMode,
     txnRef: String
@@ -1147,7 +1180,7 @@ fun TransferPreviewCard(
                     Icons.Default.Person        to ("To"       to bank.name),
                     Icons.Default.CreditCard    to ("Account"  to bank.accountNo),
                     Icons.Default.AccountBalance to ("Bank"    to bank.bankName),
-                    Icons.Default.Numbers       to ("IFSC"     to bank.ifsc),
+                    Icons.Default.Numbers       to ("IFSC"     to bank.ifscCode),
                     Icons.Default.SwapHoriz     to ("Mode"     to mode.label),
                     Icons.Default.Tag           to ("Ref No"   to txnRef),
                 ).forEach { (icon, pair) ->
@@ -1164,7 +1197,7 @@ fun TransferPreviewCard(
                             style    = MaterialTheme.typography.labelSmall,
                             color    = colorScheme.outline,
                             modifier = Modifier.width(60.dp))
-                        Text(value,
+                        Text(value!!,
                             style      = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
                             color      = colorScheme.onSurface,
@@ -1179,7 +1212,7 @@ fun TransferPreviewCard(
 @Composable
 fun TransferResultStep(
     isSuccess: Boolean,
-    bank:      PayoutBank,
+    bank:      MtbBankData,
     amount:    String,
     mode:      TransferMode,
     txnRef:    String,
@@ -1270,29 +1303,3 @@ fun TransferResultStep(
 // PREVIEWS
 // ─────────────────────────────────────────────
 
-@Preview(name = "MTB – Light", showBackground = true)
-@Preview(name = "MTB – Dark",  showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Composable
-fun PreviewMoveToBankScreen() {
-    MaterialTheme { MoveToBankScreen() }
-}
-
-@Preview(name = "Payout Bank Card – Active", showBackground = true)
-@Composable
-fun PreviewPayoutBankCardActive() {
-    MaterialTheme {
-        Box(Modifier.padding(16.dp)) {
-            PayoutBankCard(bank = mockPayoutBanks[0], onPayClick = {})
-        }
-    }
-}
-
-@Preview(name = "Payout Bank Card – Pending", showBackground = true)
-@Composable
-fun PreviewPayoutBankCardPending() {
-    MaterialTheme {
-        Box(Modifier.padding(16.dp)) {
-            PayoutBankCard(bank = mockPayoutBanks[2], onPayClick = {})
-        }
-    }
-}

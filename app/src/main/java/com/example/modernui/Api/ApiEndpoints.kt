@@ -1,10 +1,7 @@
 package com.example.modernui.Api
 
 
-/**
- * Centralized API configuration.
- * Host and endpoints in one place - build full URLs by attaching path to base.
- */
+
 object ApiEndpoints {
 
     object Admin {
@@ -36,14 +33,13 @@ object ApiEndpoints {
 
     }
     object MTB {
-        const val MTB = "common/fetchPayoutUserBank/NA"
-
+        const val MTB_LISTED_BANK = "common/fetchPayoutUserBank/"
+        const val MTB_ADD_PAYOUT_BANK = "common/addPayoutBank"
+        const val MTB_PAYOUT = "aeps/payout"
 
     }
     object CMS {
         const val CMS = "aeps/generateCmsLink"
-
-
     }
     object Insurance
     {

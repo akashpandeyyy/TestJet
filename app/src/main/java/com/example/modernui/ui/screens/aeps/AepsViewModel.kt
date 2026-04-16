@@ -21,8 +21,8 @@ import javax.inject.Inject
 sealed class AepsUiState {
     object Idle : AepsUiState()
     object Loading : AepsUiState()
-    data class Success(val message: String, val txnId: String) : AepsUiState()
-    data class Error(val message: String) : AepsUiState()
+    data class Success(val response: AepsModelResponse) : AepsUiState()
+    data class Error(val message: String, val response: AepsModelResponse? = null) : AepsUiState()
     object Needs2FA : AepsUiState() // Status is 17
 }
 
@@ -282,15 +282,20 @@ class AepsViewModel @Inject constructor(
 
                 val response = userRepo.validateuserAeps(request)
 
-                if (response.status == 1) {
-                    _uiState.value = AepsUiState.Success(
-                        message = response.message ?: "Transaction Successful",
-                        txnId = response.data?.rrn ?: ""
+                if (response.data?.status == "SUCCESS") {
+                    _uiState.value = AepsUiState.Success(response)
+                } else if (response.status == 1) {
+                    _uiState.value = AepsUiState.Error(
+                        message = response.message ?: "Transaction Failed",
+                        response = response
                     )
                 } else if (response.status == 17) {
                     _uiState.value = AepsUiState.Needs2FA
                 } else {
-                    _uiState.value = AepsUiState.Error(response.message ?: "Transaction Failed")
+                    _uiState.value = AepsUiState.Error(
+                        message = response.message ?: "Transaction Failed",
+                        response = response
+                    )
                 }
 
             } catch (e: Exception) {

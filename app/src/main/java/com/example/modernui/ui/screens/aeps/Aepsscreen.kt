@@ -1,6 +1,13 @@
 package com.example.modernui.ui.screens.aeps
 
+import android.app.Activity
+import android.content.Intent
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -8,18 +15,39 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.CurrencyRupee
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Print
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import com.example.modernui.ui.screens.aeps.AepsModelResponse
+import com.example.modernui.ui.screens.aeps.Data
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.modernui.ui.components.*
+import com.example.modernui.ui.components.intentpackage.RdHelper
 import com.example.modernui.ui.screens.addharpay.FingerprintScanningAnimation
 import com.example.modernui.ui.screens.addharpay.VerificationFailedBanner
 import com.example.modernui.ui.screens.cashdeposite.DeviceSelectionSheet
@@ -28,6 +56,7 @@ import com.example.modernui.ui.screens.cashdeposite.FingerprintDevice
 import com.example.modernui.ui.screens.cashdeposite.SelectedDeviceCard
 import com.example.modernui.ui.theme.AppColors
 import com.example.modernui.ui.theme.FintechColors
+import kotlinx.coroutines.flow.collectLatest
 
 // --- DEVICE DATA ---
 private val fingerprintDevices = listOf(
@@ -42,6 +71,7 @@ fun AepsScreen(
     viewModel: AepsViewModel = hiltViewModel(),
     onBackClick: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     val colorScheme = MaterialTheme.colorScheme
     val uiState by viewModel.uiState.collectAsState()
 
@@ -51,10 +81,53 @@ fun AepsScreen(
     val selectedBank by viewModel.selectedBank.collectAsState()
     val selectedTxnType by viewModel.selectedTxnType.collectAsState()
     val selectedDevice by viewModel.selectedDevice.collectAsState()
+    val selectedDeviceObj = fingerprintDevices.find { it.id == selectedDevice }
     val banks by viewModel.banks.collectAsState()
     val scanState by viewModel.scanState.collectAsState()
 
+    val rdCaptureState by viewModel.rdCaptureState.collectAsState()
+
     var showDeviceSheet by remember { mutableStateOf(false) }
+    var showBankSheet by remember { mutableStateOf(false) }
+
+    val faceCaptureLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val dataIntent  = result.data
+        val outputKey   = RdHelper.getOutputKey(selectedDevice)
+        val responseData = dataIntent?.getStringExtra(outputKey) ?: ""
+
+        Log.d("AepsScreen", "Capture: Code=${result.resultCode}, Key=$outputKey, HasData=${responseData.isNotEmpty()}")
+
+        if (result.resultCode == Activity.RESULT_OK) {
+            if (responseData.isNotEmpty()) {
+                viewModel.handleRdServiceResult(responseData)
+            } else {
+                Toast.makeText(context, "Device returned empty data ($outputKey)", Toast.LENGTH_SHORT).show()
+                viewModel.resetState()
+            }
+        } else {
+            viewModel.resetState()
+            Toast.makeText(context, "Verification Cancelled", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    LaunchedEffect(rdCaptureState) {
+        if (rdCaptureState is RdCaptureState.Capture) {
+            val state = rdCaptureState as RdCaptureState.Capture
+            try {
+                val intent = android.content.Intent(state.action).apply {
+                    setPackage(state.packageName)
+                    putExtra(state.inputKey, state.pidOptions)
+                }
+                faceCaptureLauncher.launch(intent)
+                viewModel.resetRdCaptureState()
+            } catch (e: Exception) {
+                Toast.makeText(context, "RD Service not found: ${state.packageName}", Toast.LENGTH_SHORT).show()
+                viewModel.resetRdCaptureState()
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.refreshBanklist()
@@ -74,8 +147,7 @@ fun AepsScreen(
     val txnTypes = listOf("Cash Withdrawal", "Balance Enquiry", "Mini Statement")
     val needsAmount = selectedTxnType == "Cash Withdrawal"
 
-    val selectedDeviceObj = fingerprintDevices.find { it.id == selectedDevice }
-
+    // ── Dialogs & Sheets ───────────────────
     if (showDeviceSheet) {
         DeviceSelectionSheet(
             devices          = fingerprintDevices,
@@ -86,6 +158,36 @@ fun AepsScreen(
             },
             onDismiss = { showDeviceSheet = false }
         )
+    }
+
+    if (showBankSheet) {
+        BankSelectionSheet(
+            banks          = banks,
+            selectedBank   = selectedBank,
+            onBankSelected = { viewModel.onBankSelected(it) },
+            onDismiss      = { showBankSheet = false }
+        )
+    }
+
+    // --- Receipt Dialog ---
+    val receiptState = uiState
+    if (receiptState is AepsUiState.Success || (receiptState is AepsUiState.Error && receiptState.response != null)) {
+        val response = if (receiptState is AepsUiState.Success) receiptState.response else (receiptState as AepsUiState.Error).response!!
+        
+        Dialog(
+            onDismissRequest = { viewModel.resetState() },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                AepsReceiptContent(
+                    response = response,
+                    onClose = { viewModel.resetState() }
+                )
+            }
+        }
     }
 
     Column(
@@ -208,16 +310,38 @@ fun AepsScreen(
                         onOptionSelected = { viewModel.onTxnTypeSelected(it) }
                     )
 
-                    // Use NavyDropdownField with Bank names but handle selection as BankItem
-                    NavyDropdownField(
-                        label            = "Bank Name *",
-                        leadingIcon      = Icons.Default.AccountBalance,
-                        selectedValue    = selectedBank?.bankname ?: "",
-                        options          = banks.map { it.bankname ?: "" },
-                        onOptionSelected = { name ->
-                            banks.find { it.bankname == name }?.let { viewModel.onBankSelected(it) }
+                    if (selectedBank != null) {
+                        SelectedBankRow(
+                            bank    = selectedBank!!,
+                            onClick = { showBankSheet = true }
+                        )
+                    } else {
+                        OutlinedCard(
+                            onClick = { showBankSheet = true },
+                            shape   = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            border  = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                                verticalAlignment     = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(Icons.Default.AccountBalance, null,
+                                    tint     = FintechColors.NavyDark,
+                                    modifier = Modifier.size(20.dp))
+                                Text("Select Bank *",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    style = MaterialTheme.typography.bodyLarge)
+                                Spacer(Modifier.weight(1f))
+                                Icon(Icons.Default.ArrowDropDown, null,
+                                    tint = MaterialTheme.colorScheme.outline)
+                            }
                         }
-                    )
+                    }
+
                     val amountValue = amount.toDoubleOrNull() ?: 0.0
                     val amountError = amount.isNotEmpty() && amountValue < 100
                     if (needsAmount) {
@@ -245,13 +369,7 @@ fun AepsScreen(
             }
 
             Button(
-                onClick = { 
-                    if (selectedDevice == "face_scan") {
-                        viewModel.cusTwoFA()
-                    } else {
-                        viewModel.setScanState(VerificationStep.SCANNING)
-                    }
-                },
+                onClick = { viewModel.cusTwoFA() },
                 enabled = isFormValid && uiState !is AepsUiState.Loading && scanState != VerificationStep.SCANNING,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(12.dp),
@@ -268,5 +386,168 @@ fun AepsScreen(
             }
             Spacer(Modifier.height(20.dp))
         }
+    }
+}
+
+@Composable
+fun AepsReceiptContent(
+    response: AepsModelResponse,
+    onClose: () -> Unit
+) {
+    val data = response.data
+    val isSuccess = response.status == 1 && data?.status == "SUCCESS"
+    val statusColor = if (isSuccess) Color(0xFF2E7D32) else Color(0xFFD32F2F)
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F7FA))
+            .verticalScroll(rememberScrollState())
+    ) {
+        // Receipt Header
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(FintechColors.NavyDark)
+                .padding(vertical = 24.dp, horizontal = 16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    imageVector = if (isSuccess) Icons.Default.CheckCircle else Icons.Default.Error,
+                    contentDescription = null,
+                    tint = if (isSuccess) Color(0xFF4CAF50) else Color(0xFFFF5252),
+                    modifier = Modifier.size(64.dp)
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = if (isSuccess) "Transaction Successful" else "Transaction Failed",
+                    color = Color.White,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = data?.date ?: "",
+                    color = Color.White.copy(alpha = 0.7f),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+
+        // Amount Card
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("Transaction Amount", color = Color.Gray, style = MaterialTheme.typography.labelMedium)
+                Text(
+                    "₹ ${data?.txnAmount ?: "0.00"}",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = FintechColors.NavyDark
+                )
+                if (!isSuccess) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = data?.errormessage ?: response.message ?: "Unknown Error",
+                        color = Color.Red,
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        }
+
+        // Details Card
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                ReceiptRow("Transaction Type", data?.txnType ?: "N/A")
+                ReceiptRow("Aadhaar Number", data?.aadhaar ?: "N/A")
+                ReceiptRow("RRN", data?.rrn ?: "N/A")
+                ReceiptRow("STAN", data?.stan ?: "N/A")
+                ReceiptRow("Remaining Balance", "₹ ${data?.remainingBal ?: "0.00"}")
+                ReceiptRow("Bank IIN", data?.iin ?: "N/A")
+                ReceiptRow("Terminal ID", data?.terminalid ?: "N/A")
+                ReceiptRow("Status", data?.status ?: "FAILED", valueColor = statusColor)
+            }
+        }
+
+        Spacer(Modifier.weight(1f))
+
+        // Actions
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            val context = LocalContext.current
+            OutlinedButton(
+                onClick = {
+                    val shareText = """
+                        --- Transaction Receipt ---
+                        Status: ${if (isSuccess) "SUCCESS" else "FAILED"}
+                        Type: ${data?.txnType ?: "N/A"}
+                        Amount: ₹ ${data?.txnAmount ?: "0.00"}
+                        Aadhaar: ${data?.aadhaar ?: "N/A"}
+                        RRN: ${data?.rrn ?: "N/A"}
+                        Date: ${data?.date ?: ""}
+                        ---------------------------
+                    """.trimIndent()
+
+                    val sendIntent: Intent = Intent().apply {
+                        action = Intent.ACTION_SEND
+                        putExtra(Intent.EXTRA_TEXT, shareText)
+                        type = "text/plain"
+                    }
+
+                    val shareIntent = Intent.createChooser(sendIntent, null)
+                    context.startActivity(shareIntent)
+                },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Icon(Icons.Default.Share, null)
+                Spacer(Modifier.width(8.dp))
+                Text("Share")
+            }
+            Button(
+                onClick = onClose,
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = FintechColors.NavyDark)
+            ) {
+                Text("Done")
+            }
+        }
+    }
+}
+
+@Composable
+fun ReceiptRow(label: String, value: String, valueColor: Color = Color.Unspecified) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
+        Text(
+            value,
+            color = valueColor,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
