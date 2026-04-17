@@ -4,6 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.modernui.Api.UserRepo
 import com.example.modernui.Api.model.UserResponse
+import com.example.modernui.ui.screens.aeps.AepsUiState
+import com.example.modernui.ui.screens.recharge.fetchmodel.Plan
+import com.example.modernui.ui.screens.recharge.rechargemodel.RechargeRequest
+import com.example.modernui.ui.screens.recharge.rechargemodel.RechargeResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +18,7 @@ import javax.inject.Inject
 sealed class RechargeUiState {
     object Idle : RechargeUiState()
     object Loading : RechargeUiState()
-    data class Success(val response: UserResponse) : RechargeUiState()
+    data class Success(val response: RechargeResponse) : RechargeUiState()
     data class Error(val message: String) : RechargeUiState()
 }
 
@@ -25,6 +29,8 @@ class RechargeViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow<RechargeUiState>(RechargeUiState.Idle)
     val uiState: StateFlow<RechargeUiState> = _uiState.asStateFlow()
+    private val _plans = MutableStateFlow<List<Plan>>(emptyList())
+    val plans: StateFlow<List<Plan>> = _plans
 
     // Form State
     var subscriberNumber = MutableStateFlow("")
@@ -60,28 +66,88 @@ class RechargeViewModel @Inject constructor(
         subscriberNumber.value = ""
     }
 
-    fun performRecharge() {
+   // (amt : String,operator : String, mob: String)
+   fun performRechargemob() {
         viewModelScope.launch {
             _uiState.value = RechargeUiState.Loading
             try {
-                val request = mapOf(
-                    "number" to subscriberNumber.value,
-                    "operator" to selectedOperator.value,
-                    "state" to selectedState.value,
-                    "amount" to amount.value,
-                    "type" to if (selectedTab.value == 0) "MOBILE" else "DTH"
+//                if(selectedOperator.value=="Reliance Jio"){
+//                    val iincode="RJP"
+//
+//                }else if (selectedOperator.value=="Airtel"){
+//                    val iincode="ATL"
+//                }
+//                else if (selectedOperator.value=="VI"){
+//                    val iincode="VI"
+//                }
+//                else if (selectedOperator.value=="BSNL"){
+//                    val iincode="BSNL"
+//                }
+//                else if (selectedOperator.value=="BSNL SPECIAL"){
+//                    val iincode="BSNLS"
+//                }
+
+                val iincode = when (selectedOperator.value) {
+                    "Reliance Jio" -> "RJP"
+                    "Airtel" -> "ATL"
+                    "VI" -> "VI"
+                    "BSNL" -> "BSNL"
+                    "BSNL SPECIAL" -> "BSNLS"
+                    else -> throw IllegalArgumentException("Unknown operator")
+                }
+
+                val request = RechargeRequest(
+                    mobile =subscriberNumber.value,
+                    amount =amount.value,
+                    incode = iincode
                 )
                 val response = userRepo.doRecharge(request)
-                if (response.status == 1) {
-                    _uiState.value = RechargeUiState.Success(response)
-                } else {
-                    _uiState.value = RechargeUiState.Error(response.errorMessage ?: "Recharge Failed")
+                try {
+                    if (response.status == 1) {
+                        _uiState.value = RechargeUiState.Success(response)
+                    } else if (response.status == 0) {
+                        _uiState.value = RechargeUiState.Error(
+                            message = response.message ?: "Transaction Failed",
+                        )
+                    } else if (response.status == 2) {
+
+                    } else {
+                        _uiState.value = RechargeUiState.Error(
+                            message = response.message ?: "Transaction Failed",
+                        )
+                    }
+
+                }catch (e: Exception) {
+                    _uiState.value = RechargeUiState.Error(e.message ?: "Network Error")
                 }
+
             } catch (e: Exception) {
                 _uiState.value = RechargeUiState.Error(e.message ?: "Network Error")
             }
         }
     }
+
+    fun performRechargedth() {
+        viewModelScope.launch {
+            _uiState.value = RechargeUiState.Loading
+            try {
+
+            } catch (e: Exception) {
+                _uiState.value = RechargeUiState.Error(e.message ?: "Network Error")
+            }
+        }
+    }
+
+    fun onMobileNumberComplete(value: String) {
+        viewModelScope.launch {
+            val response = userRepo.fetchplan(value)
+            if (response.status == 1) {
+                _plans.value = response.data.plans
+            }
+        }
+    }
+
+
 
     fun resetState() {
         _uiState.value = RechargeUiState.Idle

@@ -1,7 +1,6 @@
 package com.example.modernui.Api
 
 
-import com.example.modernui.Api.ApiEndpoints.Admin.FETCH_INCODE_BY_SERVICE
 import com.example.modernui.Api.ApiEndpoints.Login.USER_LOGIN
 import com.example.modernui.Api.ApiEndpoints.Login.USER_ValidateSession
 import com.example.modernui.Api.ApiEndpoints.Aeps.AEPS_STATUS_APP
@@ -12,10 +11,9 @@ import com.example.modernui.Api.ApiEndpoints.Insurance.Insurance as INSURANCE_EN
 import com.example.modernui.Api.ApiEndpoints.Recharge.TRANSACTION as RECHARGE_TRANSACTION
 import com.example.modernui.Api.ApiEndpoints.Recharge.MOBILE_PLANS
 import com.example.modernui.Api.ApiEndpoints.User.FETCH_USER_BALANCE
-import com.example.modernui.Api.ApiEndpoints.User.BANKS
+
 import com.example.modernui.Api.ApiEndpoints.Login.VALIDATE_OTP
 import com.example.modernui.Api.ApiEndpoints.MTB.MTB_ADD_PAYOUT_BANK
-import com.example.modernui.Api.ApiEndpoints.MTB.MTB_LISTED_BANK
 import com.example.modernui.Api.ApiEndpoints.MTB.MTB_PAYOUT
 import com.example.modernui.Api.model.BankListResponse
 import com.example.modernui.Api.model.Cmsresponce
@@ -36,11 +34,13 @@ import com.example.modernui.ui.screens.login.otprequest
 import com.example.modernui.ui.screens.mtb.model.Beniaddrequest
 import com.example.modernui.ui.screens.mtb.model.PayoutRequest
 import com.example.modernui.ui.screens.mtb.model.PayoutResponse
+import com.example.modernui.ui.screens.recharge.fetchmodel.FetchPlanResponse
+import com.example.modernui.ui.screens.recharge.rechargemodel.RechargeRequest
+import com.example.modernui.ui.screens.recharge.rechargemodel.RechargeResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
-import retrofit2.http.Headers
 import retrofit2.http.POST
-import retrofit2.http.Query
+import retrofit2.http.Path
 import retrofit2.http.Url
 
 interface ApiService {
@@ -96,23 +96,18 @@ interface ApiService {
     // Recharge APIs
     @POST(RECHARGE_TRANSACTION)
     suspend fun doRecharge(
-        @Body request: Map<String, String>
-    ): UserResponse
+        @Body request: RechargeRequest
+    ): RechargeResponse
 
     @GET(MOBILE_PLANS)
-    suspend fun getMobilePlans(
-        @Query("operator") operator: String,
-        @Query("circle") circle: String
-    ): UserResponse
+    suspend fun fetchplan(@Path("mobileNumber") mobileNumber: String): FetchPlanResponse
+
 
     // User APIs
     @GET(FETCH_USER_BALANCE)
     suspend fun fetchUserBalance(): balanceresponce
 
 
-    // Admin APIs
-    @GET(FETCH_INCODE_BY_SERVICE)
-    suspend fun fetchIncodeByService(@Query("service") service: String): UserResponse
 
     // MTB APIs
     @POST

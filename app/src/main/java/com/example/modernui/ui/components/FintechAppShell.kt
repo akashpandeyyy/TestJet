@@ -42,6 +42,7 @@ import com.example.modernui.ui.screens.common.TwoFactorAuthScreen
 import com.example.modernui.ui.screens.login.FintechLoginScreenM3
 import com.example.modernui.ui.screens.login.UserDetailScreenM3
 import com.example.modernui.ui.screens.login.UserViewModel
+import com.example.modernui.ui.screens.recharge.fetchmodel.PlanDetail
 import kotlinx.coroutines.launch
 
 
@@ -169,7 +170,7 @@ fun FintechAppShell(
         }
 
         composable(Routes.RECHARGE) {
-            RechargeScreen(onBackClick = { navController.popBackStack() })
+            RechargeScreen(onBackClick = { navController.popBackStack() },)
         }
 
         composable(Routes.CASH_DEPOSIT) {

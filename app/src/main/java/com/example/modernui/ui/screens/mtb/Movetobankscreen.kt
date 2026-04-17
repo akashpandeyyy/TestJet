@@ -168,7 +168,10 @@ fun MoveToBankScreen(
     if (showPayDialog && selectedBank != null) {
         PayTransferDialog(
             bank      = selectedBank!!,
-            onDismiss = {},
+            onDismiss = {
+                showPayDialog = false
+                selectedBank  = null
+            },
             onPaySubmit = { amount, mode, onResult ->
                 viewModel.performTransfer(selectedBank!!, amount, mode, onResult)
             }
@@ -766,19 +769,35 @@ fun PayTransferDialog(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment     = Alignment.CenterVertically
                     ) {
-                        Text(
-                            when (step) {
-
-                                PayDialogStep.AMOUNT_MODE -> "Transfer Details"
-                                PayDialogStep.PREVIEW     -> "Preview Transfer"
-                                PayDialogStep.CONFIRM     -> "Confirm Transfer"
-                                PayDialogStep.PROCESSING  -> "Processing..."
-                                PayDialogStep.RESULT      -> if (isSuccess) "Transfer Successful" else "Transfer Failed"
-                            },
-                            color      = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            style      = MaterialTheme.typography.titleMedium
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (step != PayDialogStep.AMOUNT_MODE && step != PayDialogStep.PROCESSING && step != PayDialogStep.RESULT) {
+                                IconButton(
+                                    onClick = {
+                                        step = when (step) {
+                                            PayDialogStep.PREVIEW -> PayDialogStep.AMOUNT_MODE
+                                            PayDialogStep.CONFIRM -> PayDialogStep.PREVIEW
+                                            else -> step
+                                        }
+                                    },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(Icons.Default.ArrowBack, "Back", tint = Color.White)
+                                }
+                                Spacer(Modifier.width(8.dp))
+                            }
+                            Text(
+                                when (step) {
+                                    PayDialogStep.AMOUNT_MODE -> "Transfer Details"
+                                    PayDialogStep.PREVIEW     -> "Preview Transfer"
+                                    PayDialogStep.CONFIRM     -> "Confirm Transfer"
+                                    PayDialogStep.PROCESSING  -> "Processing..."
+                                    PayDialogStep.RESULT      -> if (isSuccess) "Transfer Successful" else "Transfer Failed"
+                                },
+                                color      = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                style      = MaterialTheme.typography.titleMedium
+                            )
+                        }
                         if (step != PayDialogStep.PROCESSING) {
                             IconButton(
                                 onClick  = onDismiss,

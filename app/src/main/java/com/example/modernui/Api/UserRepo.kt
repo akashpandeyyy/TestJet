@@ -21,6 +21,9 @@ import com.example.modernui.ui.screens.login.otprequest
 import com.example.modernui.ui.screens.mtb.model.Beniaddrequest
 import com.example.modernui.ui.screens.mtb.model.PayoutRequest
 import com.example.modernui.ui.screens.mtb.model.PayoutResponse
+import com.example.modernui.ui.screens.recharge.fetchmodel.FetchPlanResponse
+import com.example.modernui.ui.screens.recharge.rechargemodel.RechargeRequest
+import com.example.modernui.ui.screens.recharge.rechargemodel.RechargeResponse
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -76,14 +79,6 @@ class UserRepo @Inject constructor(
 
     val userSessionFlow = sessionManager.userSessionFlow
 
-    suspend fun doRecharge(request: Map<String, String>): UserResponse {
-        return apiService.doRecharge(request)
-    }
-
-    suspend fun getMobilePlans(operator: String, circle: String): UserResponse {
-        return apiService.getMobilePlans(operator, circle)
-    }
-
     suspend fun fetchUserBalance(): balanceresponce {
         return apiService.fetchUserBalance()
     }
@@ -91,9 +86,8 @@ class UserRepo @Inject constructor(
     suspend fun getBanks(): BankListResponse {
         return apiService.getBanks()
     }
-
-    suspend fun fetchIncodeByService(service: String): UserResponse {
-        return apiService.fetchIncodeByService(service)
+    suspend fun doRecharge(request: RechargeRequest): RechargeResponse {
+        return apiService.doRecharge(request)
     }
 
     suspend fun fetchMtbData(userId: String): MtbBankResponse {
@@ -144,8 +138,12 @@ class UserRepo @Inject constructor(
         }
     }
 
-    // Keeping getUser for compatibility if needed, but updating to use userLogin logic
-    suspend fun getUser(username: String, password: String): UserResponse {
-        return userLogin(LoginRequest(username, password))
+
+        suspend fun fetchplan(mobileNumber: String): FetchPlanResponse {
+            return apiService.fetchplan(mobileNumber)
+
+
     }
+
+
 }

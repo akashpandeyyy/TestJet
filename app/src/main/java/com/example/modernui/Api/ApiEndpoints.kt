@@ -17,13 +17,13 @@ object ApiEndpoints {
     }
 
     object Recharge {
-        const val MOBILE_PLANS = "recharge/mobilePlans"
+        const val MOBILE_PLANS = "recharge/mobilePlans/{mobileNumber}"
         const val TRANSACTION = "recharge/transaction"
     }
 
     object User {
         const val FETCH_USER_BALANCE = "common/fetchTotalPanelBalance"
-        const val BANKS = "user/banks"
+
     }
 
     object Aeps {
