@@ -7,6 +7,7 @@ import com.example.modernui.Api.ApiEndpoints.Aeps.AEPS_STATUS_APP
 import com.example.modernui.Api.ApiEndpoints.Aeps.AEPS_TRANSACTION
 import com.example.modernui.Api.ApiEndpoints.BankList.Bank_List
 import com.example.modernui.Api.ApiEndpoints.CMS.CMS
+import com.example.modernui.Api.ApiEndpoints.DMT.JIO_VALIDATE_CUSTOMER
 import com.example.modernui.Api.ApiEndpoints.Insurance.Insurance as INSURANCE_ENDPOINT
 import com.example.modernui.Api.ApiEndpoints.Recharge.TRANSACTION as RECHARGE_TRANSACTION
 import com.example.modernui.Api.ApiEndpoints.Recharge.MOBILE_PLANS
@@ -15,6 +16,7 @@ import com.example.modernui.Api.ApiEndpoints.User.FETCH_USER_BALANCE
 import com.example.modernui.Api.ApiEndpoints.Login.VALIDATE_OTP
 import com.example.modernui.Api.ApiEndpoints.MTB.MTB_ADD_PAYOUT_BANK
 import com.example.modernui.Api.ApiEndpoints.MTB.MTB_PAYOUT
+import com.example.modernui.Api.ApiEndpoints.Recharge.DTH_PLAN
 import com.example.modernui.Api.model.BankListResponse
 import com.example.modernui.Api.model.Cmsresponce
 import com.example.modernui.Api.model.InsuranceResponse
@@ -30,11 +32,15 @@ import com.example.modernui.ui.screens.common.model.TwoFAresponce
 import com.example.modernui.ui.screens.common.model.TwoFaAuthrequest
 import com.example.modernui.ui.screens.common.model.TwoFaFinalAuthResponse
 import com.example.modernui.ui.screens.common.model.TwoFaValidationRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.ValidateUserRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.ValidateUserResponse
 import com.example.modernui.ui.screens.login.otprequest
 import com.example.modernui.ui.screens.mtb.model.Beniaddrequest
 import com.example.modernui.ui.screens.mtb.model.PayoutRequest
 import com.example.modernui.ui.screens.mtb.model.PayoutResponse
+import com.example.modernui.ui.screens.recharge.fetchmodel.FetchDTHPlanRequest
 import com.example.modernui.ui.screens.recharge.fetchmodel.FetchPlanResponse
+import com.example.modernui.ui.screens.recharge.fetchmodel.dth.FetchDTHPlanResponce
 import com.example.modernui.ui.screens.recharge.rechargemodel.RechargeRequest
 import com.example.modernui.ui.screens.recharge.rechargemodel.RechargeResponse
 import retrofit2.http.Body
@@ -99,8 +105,21 @@ interface ApiService {
         @Body request: RechargeRequest
     ): RechargeResponse
 
+    @POST(RECHARGE_TRANSACTION)
+    suspend fun dodthRecharge(
+        @Body request: RechargeRequest
+    ): RechargeResponse
+
     @GET(MOBILE_PLANS)
     suspend fun fetchplan(@Path("mobileNumber") mobileNumber: String): FetchPlanResponse
+
+    // DTH
+    @POST(DTH_PLAN)
+    suspend fun fetchdthplan(
+        @Body request: FetchDTHPlanRequest
+    ): FetchDTHPlanResponce
+
+
 
 
     // User APIs
@@ -130,7 +149,10 @@ interface ApiService {
     @GET(INSURANCE_ENDPOINT)
     suspend fun insuranceLead(): InsuranceResponse
 
-}
+    // DMT
+    @POST(JIO_VALIDATE_CUSTOMER)
+    suspend fun jiodmtvalidatecustmoer(
+        @Body request: ValidateUserRequest
+    ): ValidateUserResponse
 
-//@GET("posts")
-//suspend fun getQuotes(@Query("page") page: Int): PagingResponceModel
+}

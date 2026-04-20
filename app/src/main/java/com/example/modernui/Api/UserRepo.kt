@@ -17,11 +17,15 @@ import com.example.modernui.ui.screens.common.model.TwoFAresponce
 import com.example.modernui.ui.screens.common.model.TwoFaAuthrequest
 import com.example.modernui.ui.screens.common.model.TwoFaFinalAuthResponse
 import com.example.modernui.ui.screens.common.model.TwoFaValidationRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.ValidateUserRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.ValidateUserResponse
 import com.example.modernui.ui.screens.login.otprequest
 import com.example.modernui.ui.screens.mtb.model.Beniaddrequest
 import com.example.modernui.ui.screens.mtb.model.PayoutRequest
 import com.example.modernui.ui.screens.mtb.model.PayoutResponse
+import com.example.modernui.ui.screens.recharge.fetchmodel.FetchDTHPlanRequest
 import com.example.modernui.ui.screens.recharge.fetchmodel.FetchPlanResponse
+import com.example.modernui.ui.screens.recharge.fetchmodel.dth.FetchDTHPlanResponce
 import com.example.modernui.ui.screens.recharge.rechargemodel.RechargeRequest
 import com.example.modernui.ui.screens.recharge.rechargemodel.RechargeResponse
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -89,6 +93,9 @@ class UserRepo @Inject constructor(
     suspend fun doRecharge(request: RechargeRequest): RechargeResponse {
         return apiService.doRecharge(request)
     }
+    suspend fun dodthRecharge(request: RechargeRequest): RechargeResponse {
+        return apiService.dodthRecharge(request)
+    }
 
     suspend fun fetchMtbData(userId: String): MtbBankResponse {
         val url = "${ApiEndpoints.MTB.MTB_LISTED_BANK}$userId"
@@ -141,8 +148,14 @@ class UserRepo @Inject constructor(
 
         suspend fun fetchplan(mobileNumber: String): FetchPlanResponse {
             return apiService.fetchplan(mobileNumber)
+    }
+    suspend fun fetchdthplan(request : FetchDTHPlanRequest): FetchDTHPlanResponce {
+            return apiService.fetchdthplan(request)
+    }
 
-
+    //DMT
+    suspend fun jiodmtvalidatecustmoer(request : ValidateUserRequest): ValidateUserResponse {
+        return apiService.jiodmtvalidatecustmoer(request)
     }
 
 

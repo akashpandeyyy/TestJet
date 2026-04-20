@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.modernui.Api.UserRepo
 import com.example.modernui.Api.model.UserResponse
 import com.example.modernui.ui.screens.aeps.AepsUiState
+import com.example.modernui.ui.screens.recharge.fetchmodel.FetchDTHPlanRequest
 import com.example.modernui.ui.screens.recharge.fetchmodel.Plan
 import com.example.modernui.ui.screens.recharge.rechargemodel.RechargeRequest
 import com.example.modernui.ui.screens.recharge.rechargemodel.RechargeResponse
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.String
 
 sealed class RechargeUiState {
     object Idle : RechargeUiState()
@@ -71,21 +73,6 @@ class RechargeViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = RechargeUiState.Loading
             try {
-//                if(selectedOperator.value=="Reliance Jio"){
-//                    val iincode="RJP"
-//
-//                }else if (selectedOperator.value=="Airtel"){
-//                    val iincode="ATL"
-//                }
-//                else if (selectedOperator.value=="VI"){
-//                    val iincode="VI"
-//                }
-//                else if (selectedOperator.value=="BSNL"){
-//                    val iincode="BSNL"
-//                }
-//                else if (selectedOperator.value=="BSNL SPECIAL"){
-//                    val iincode="BSNLS"
-//                }
 
                 val iincode = when (selectedOperator.value) {
                     "Reliance Jio" -> "RJP"
@@ -131,6 +118,41 @@ class RechargeViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = RechargeUiState.Loading
             try {
+                    val iincode = when (selectedOperator.value) {
+                        "Airtel DTH" -> "AH"
+                        "VIDEOCON D2H" -> "VH"
+                        "DISH TV" -> "DH"
+                        "TATA PLAY" -> "TPL"
+                        "SUN DIRECT" ->"SND"
+                        else -> throw IllegalArgumentException("Unknown operator")
+                    }
+
+                    val request = RechargeRequest(
+                        mobile =subscriberNumber.value,
+                        amount =amount.value,
+                        incode = iincode
+                    )
+                    val response = userRepo.dodthRecharge(request)
+                    try {
+                        if (response.status == 1) {
+                            _uiState.value = RechargeUiState.Success(response)
+                        } else if (response.status == 0) {
+                            _uiState.value = RechargeUiState.Error(
+                                message = response.message ?: "Transaction Failed",
+                            )
+                        } else if (response.status == 2) {
+
+                        } else {
+                            _uiState.value = RechargeUiState.Error(
+                                message = response.message ?: "Transaction Failed",
+                            )
+                        }
+
+                    }catch (e: Exception) {
+                        _uiState.value = RechargeUiState.Error(e.message ?: "Network Error")
+                    }
+
+
 
             } catch (e: Exception) {
                 _uiState.value = RechargeUiState.Error(e.message ?: "Network Error")
@@ -147,6 +169,77 @@ class RechargeViewModel @Inject constructor(
         }
     }
 
+//    fun onDTHNumberComplete(value: String,) {
+//        viewModelScope.launch {
+//            try {
+//                val oprator = when (selectedOperator.value) {
+//                    "Airtel DTH" -> "Airtel"
+//                    "VIDEOCON D2H" -> "D2h"
+//                    "DISH TV" -> "Dish"
+//                    "TATA PLAY" -> "TataPlay"
+//                    "SUN DIRECT" ->"SunDirect"
+//                    else -> throw IllegalArgumentException("Unknown operator")
+//                }
+//                val request = FetchDTHPlanRequest(
+//                    operator= oprator,
+//                    customerId=subscriberNumber.value
+//                )
+//                val response = userRepo.fetchdthplan(request)
+//                try {
+//                    if (response.status == 1) {
+//
+//                    }  else {
+//                        _uiState.value = RechargeUiState.Error(
+//                            message = response.message
+//                        )
+//                    }
+//
+//                }catch (e: Exception) {
+//                    _uiState.value = RechargeUiState.Error(e.message ?: "Network Error")
+//                }
+//
+//
+//            }catch (e: Exception) {
+//                _uiState.value = RechargeUiState.Error(e.message ?: "Network Error")
+//            }
+//
+//        }
+//    }
+fun onDTHNumberComplete(value: String) {
+    viewModelScope.launch {
+        try {
+            val operatorMapped = when (selectedOperator.value) {
+                "Airtel DTH" -> "AH"
+                "VIDEOCON D2H" -> "VH"
+                "DISH TV" -> "DH"
+                "TATA PLAY" -> "TPL"
+                "SUN DIRECT" ->"SND"
+                else -> throw IllegalArgumentException("Unknown operator")
+            }
+
+            val request = FetchDTHPlanRequest(
+                operator = operatorMapped,
+                customerId = value // use function param
+            )
+
+            val response = userRepo.fetchdthplan(request)
+
+            if (response.status == 1 && response.data != null) {
+                //  success handling
+                // update UI state here
+            } else {
+                _uiState.value = RechargeUiState.Error(
+                    message = response.message
+                )
+            }
+
+        } catch (e: Exception) {
+            _uiState.value = RechargeUiState.Error(
+                e.message ?: "Network Error"
+            )
+        }
+    }
+}
 
 
     fun resetState() {

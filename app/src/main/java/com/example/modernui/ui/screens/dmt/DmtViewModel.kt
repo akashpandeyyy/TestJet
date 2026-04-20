@@ -1,10 +1,15 @@
 package com.example.modernui.ui.screens.dmt
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.modernui.Api.UserRepo
 import com.example.modernui.core.datastore.SessionManager
+import com.example.modernui.core.location.UserLocationProvider
+import com.example.modernui.ui.screens.common.TwoFaUiState
+import com.example.modernui.ui.screens.common.model.TwoFaAuthrequest
+import com.example.modernui.ui.screens.dmt.jiomodel.ValidateUserRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
@@ -19,6 +24,8 @@ import javax.inject.Inject
 class DmtViewModel @Inject constructor(
     private val userRepo: UserRepo,
     private val sessionManager: SessionManager,
+    private val locationProvider: UserLocationProvider,
+
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -57,18 +64,29 @@ class DmtViewModel @Inject constructor(
         }
     }
 
-    fun checkMobile(mobile: String, onResult: (Boolean) -> Unit) {
+    fun checkMobile(mobile: String) {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
             try {
-                // Mocking mobile check logic
-                delay(1200)
-                val isKnown = mobile in setOf("91653371777", "9999999999", "8888888888")
-                if (isKnown) {
-                    _beneficiaries.value = getMockBeneficiaries()
+                val location = locationProvider.getCurrentLocation()
+                var  latitude = location?.first  // Actual Lat
+                var longitude = location?.second // Actual Lng
+                val request = ValidateUserRequest(
+                    mobile=mobile,
+                    latitude = latitude,  // Actual Lat
+                    longitude = longitude, // Actual Lng
+                )
+
+                val response =userRepo.jiodmtvalidatecustmoer(request)
+                if ( response.data!= null) {
+
+                   Log.e("Validate user","API hit with good response")
+
+                } else {
+                    Log.e("Validate user","Error occurs")
                 }
-                onResult(isKnown)
+
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Failed to check mobile"
             } finally {

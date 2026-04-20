@@ -51,7 +51,7 @@ private val allStates = listOf(
 )
 
 private val mobileOperators = listOf("Reliance Jio", "Airtel", "VI", "BSNL", "BSNL SPECIAL")
-private val dthOperators    = listOf("Tata Play", "Dish TV", "Airtel DTH", "Sun Direct", "D2H")
+private val dthOperators    = listOf("Airtel DTH", "VIDEOCON D2H", "DISH TV", "TATA PLAY", "SUN DIRECT")
 
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
@@ -74,7 +74,7 @@ fun RechargeScreen(
     var selectedPlanIndex by remember { mutableIntStateOf(-1) }
 
     val operators = if (selectedTab == 0) mobileOperators else dthOperators
-    val maxNumLen = if (selectedTab == 0) 10 else 12
+    val maxNumLen = if (selectedTab == 0) 10 else 9
     val numError = subscriberNumber.isNotEmpty() && subscriberNumber.length != maxNumLen
     val isFormValid = subscriberNumber.length == maxNumLen
             && selectedOperator.isNotEmpty()
@@ -215,15 +215,36 @@ fun RechargeScreen(
 
                         if (isCompact) {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+//                                NavyDropdownField(
+//                                    label = "Operator *",
+//                                    leadingIcon = Icons.Default.Business,
+//                                    selectedValue = selectedOperator,
+//                                    onValueChange = {
+//                                        viewModel.onOperatorChange(it)
+//
+//                                        if (selectedTab == 1) {
+//                                            viewModel.onDTHNumberComplete(subscriberNumber)
+//                                        }
+//                                    },
+//                                    options = operators,
+//                                    onOptionSelected = { viewModel.onOperatorChange(it) },
+//                                    modifier = Modifier.fillMaxWidth()
+//                                )
+
                                 NavyDropdownField(
                                     label = "Operator *",
                                     leadingIcon = Icons.Default.Business,
                                     selectedValue = selectedOperator,
                                     options = operators,
-                                    onOptionSelected = { viewModel.onOperatorChange(it) },
+                                    onOptionSelected = {
+                                        viewModel.onOperatorChange(it)
+
+                                        if (selectedTab == 1) {
+                                            viewModel.onDTHNumberComplete(subscriberNumber)
+                                        }
+                                    },
                                     modifier = Modifier.fillMaxWidth()
                                 )
-
                                 NavyDropdownField(
                                     label = "State *",
                                     leadingIcon = Icons.Default.LocationOn,

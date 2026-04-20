@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.SendToMobile
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,6 +33,7 @@ import com.example.modernui.ui.components.*
 import com.example.modernui.ui.screens.addharpay.FingerprintScanningAnimation
 import com.example.modernui.ui.screens.addharpay.VerificationFailedBanner
 import com.example.modernui.ui.screens.addharpay.VerificationStep
+import com.example.modernui.ui.screens.dmt.jiomodel.BeneDetail
 import com.example.modernui.ui.theme.FintechColors
 import kotlinx.coroutines.delay
 
@@ -54,26 +56,9 @@ enum class DmtScreen {
 // MOCK DATA
 // ─────────────────────────────────────────────
 
-data class Beneficiary(
-    val id:          String,
-    val name:        String,
-    val accountNo:   String,
-    val bankName:    String,
-    val ifsc:        String,
-    val initials:    String
-)
-
-// Simulated "existing" mobiles that have a beneficiary list
-private val knownMobiles = setOf("91653371777", "9999999999", "8888888888")
 
 private val transferLimits = listOf("1000", "2000", "5000",)
 
-val mockBeneficiaries = listOf(
-    Beneficiary("b1", "Ansh Sharma", "XXXX XXXX 4291", "State Bank of India", "SBIN0001234", "RS"),
-    Beneficiary("b2", "Ayush Mishra", "XXXX XXXX 8803", "HDFC Bank", "HDFC0005678", "PV"),
-    Beneficiary("b3", "Akhil Dwivedi", "XXXX XXXX 1147", "ICICI Bank", "ICIC0009876", "AG"),
-    Beneficiary("b4", "Anurag Dwivedi", "XXXX XXXX 3366", "Punjab National Bank", "PUNB0004321", "SD"),
-)
 
 
 // ─────────────────────────────────────────────
@@ -88,7 +73,7 @@ fun DmtScreen(
 ) {
     var currentScreen    by remember { mutableStateOf(DmtScreen.ENTER_MOBILE) }
     var senderMobile     by remember { mutableStateOf("") }
-    var selectedBenef    by remember { mutableStateOf<Beneficiary?>(null) }
+    var selectedBenef    by remember { mutableStateOf<List<BeneDetail>?>(null) }
     var transferAmount   by remember { mutableStateOf("") }
     var otpValue         by remember { mutableStateOf("") }
     var selectedTab      by remember { mutableIntStateOf(initialTab) }
@@ -173,8 +158,7 @@ fun DmtScreen(
                 DmtScreen.BENEFICIARY_LIST -> BeneficiaryListScreen(
                     senderMobile    = senderMobile,
                     beneficiaries   = beneficiaries,
-                    onPayClick      = { benef ->
-                        selectedBenef = benef
+                    onPayClick      = { selectedBenef
                         currentScreen = DmtScreen.PAY_ENTER_AMOUNT
                     }
                 )
@@ -285,7 +269,7 @@ fun EnterMobileScreen(
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         NavyHeaderCard(
-            icon     = Icons.Default.SendToMobile,
+            icon     = Icons.AutoMirrored.Filled.SendToMobile,
             title    = "Domestic Money Transfer",
             subtitle = "Send money instantly to any bank account"
         )
@@ -415,12 +399,7 @@ fun EnterMobileScreen(
 
                 NavyPrimaryButton(
                     text    = "Check & Continue",
-                    onClick = {
-                        viewModel.checkMobile(mobile) { isKnown ->
-                            if (isKnown) onKnownMobile(mobile)
-                            else onUnknownMobile(mobile)
-                        }
-                    },
+                    onClick = { viewModel.checkMobile(mobile) },
                     enabled = isReady && !isLoading,
                     icon    = Icons.Default.Search
                 )
@@ -439,8 +418,8 @@ fun EnterMobileScreen(
 @Composable
 fun BeneficiaryListScreen(
     senderMobile:  String,
-    beneficiaries: List<Beneficiary>,
-    onPayClick:    (Beneficiary) -> Unit
+    beneficiaries: List<BeneDetail>,
+    onPayClick:    () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -521,7 +500,7 @@ fun BeneficiaryListScreen(
         beneficiaries.forEach { benef ->
             BeneficiaryCard(
                 beneficiary = benef,
-                onPayClick  = { onPayClick(benef) }
+                onPayClick  = { onPayClick() }
             )
         }
 
@@ -531,7 +510,7 @@ fun BeneficiaryListScreen(
 
 @Composable
 fun BeneficiaryCard(
-    beneficiary: Beneficiary,
+    beneficiary: BeneDetail,
     onPayClick:  () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -554,7 +533,7 @@ fun BeneficiaryCard(
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Text(
-                        beneficiary.initials,
+                        beneficiary.id,
                         color      = FintechColors.NavyDark,
                         fontWeight = FontWeight.Bold,
                         fontSize   = 16.sp
@@ -563,14 +542,14 @@ fun BeneficiaryCard(
             }
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(beneficiary.name,
+                Text(beneficiary.beneName,
                     style      = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color      = colorScheme.onSurface)
-                Text(beneficiary.bankName,
+                Text(beneficiary.mobile,
                     style = MaterialTheme.typography.labelSmall,
                     color = colorScheme.outline)
-                Text(beneficiary.accountNo,
+                Text(beneficiary.account,
                     style = MaterialTheme.typography.labelSmall,
                     color = colorScheme.outline)
             }

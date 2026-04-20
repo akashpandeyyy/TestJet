@@ -19,6 +19,9 @@ object ApiEndpoints {
     object Recharge {
         const val MOBILE_PLANS = "recharge/mobilePlans/{mobileNumber}"
         const val TRANSACTION = "recharge/transaction"
+        const val DTH_PLAN = "recharge/dthPlans"
+        const val DTH_TRANSACTION = "recharge/dthPlans"
+
     }
 
     object User {
@@ -54,5 +57,12 @@ object BankList
 {
     const val Bank_List="user/banks"
 }
+
+    object DMT
+    {
+        const val JIO_VALIDATE_CUSTOMER="dmt/validateUser"
+
+    }
+
 
 }
