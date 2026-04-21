@@ -44,7 +44,7 @@ data class FingerprintDevice(
     val icon:         ImageVector = Icons.Default.Fingerprint
 )
 
-private val fingerprintDevices = listOf(
+val fingerprintDevicesMock = listOf(
     FingerprintDevice(
         id           = "mantra_mfs100",
         name         = "Mantra MFS100",
@@ -119,7 +119,7 @@ fun CashDepositScreen(
     var mobileNumber        by remember { mutableStateOf("") }
     var amount              by remember { mutableStateOf("") }
     var selectedBank        by remember { mutableStateOf("") }
-    var selectedDevice      by remember { mutableStateOf(fingerprintDevices[0].id) }
+    var selectedDevice      by remember { mutableStateOf(fingerprintDevicesMock[0].id) }
     var showDeviceSheet     by remember { mutableStateOf(false) }
 
     // ── Validation ────────────────────────────
@@ -139,12 +139,12 @@ fun CashDepositScreen(
         "Bank of India",        "Central Bank of India","Bank of Maharashtra"
     )
 
-    val selectedDeviceObj = fingerprintDevices.find { it.id == selectedDevice }
+    val selectedDeviceObj = fingerprintDevicesMock.find { it.id == selectedDevice }
 
     // ── Device bottom sheet ───────────────────
     if (showDeviceSheet) {
         DeviceSelectionSheet(
-            devices          = fingerprintDevices,
+            devices          = fingerprintDevicesMock,
             selectedDeviceId = selectedDevice,
             onDeviceSelected = { device ->
                 selectedDevice  = device.id
@@ -850,7 +850,7 @@ fun PreviewCashDepositScreen() {
 fun PreviewDeviceSheet() {
     MaterialTheme {
         DeviceSelectionSheet(
-            devices          = fingerprintDevices,
+            devices          = fingerprintDevicesMock,
             selectedDeviceId = "mantra_mfs100",
             onDeviceSelected = {},
             onDismiss        = {}
@@ -864,7 +864,7 @@ fun PreviewSelectedDeviceCard() {
     MaterialTheme {
         Box(modifier = Modifier.padding(16.dp)) {
             SelectedDeviceCard(
-                device  = fingerprintDevices[0],
+                device  = fingerprintDevicesMock[0],
                 onClick = {}
             )
         }

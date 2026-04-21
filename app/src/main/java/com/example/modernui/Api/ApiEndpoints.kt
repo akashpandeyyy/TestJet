@@ -4,10 +4,6 @@ package com.example.modernui.Api
 
 object ApiEndpoints {
 
-    object Admin {
-        const val FETCH_INCODE_BY_SERVICE = "admin/fetchIncodeByService"
-    }
-
     object Login {
         const val USER_LOGIN = "login/userLogin"
         const val  USER_ValidateSession = "login/validateSession"
@@ -48,11 +44,6 @@ object ApiEndpoints {
     {
         const val Insurance="insurance/lead"
     }
-//    object 2FA
-//    {
-//        const val 2FAToken="sdk/validate2FAToken"
-//        const val 2FAToken="sdk/validate2FAToken"
-//    }
 object BankList
 {
     const val Bank_List="user/banks"
@@ -60,7 +51,19 @@ object BankList
 
     object DMT
     {
+       //validate customer
         const val JIO_VALIDATE_CUSTOMER="dmt/validateUser"
+
+        // send eky data
+        const val SEND_KYC_DATA="dmt/ekyc"
+
+        // send otp
+        const val SEND_OTP="dmt/sendOtp"
+
+        // verify otp
+        const val VERIFY_OTP="dmt/verifyOtp"
+
+
 
     }
 

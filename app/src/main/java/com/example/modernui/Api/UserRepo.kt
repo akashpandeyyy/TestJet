@@ -17,6 +17,10 @@ import com.example.modernui.ui.screens.common.model.TwoFAresponce
 import com.example.modernui.ui.screens.common.model.TwoFaAuthrequest
 import com.example.modernui.ui.screens.common.model.TwoFaFinalAuthResponse
 import com.example.modernui.ui.screens.common.model.TwoFaValidationRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.KycDataRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.KycDataResponse
+import com.example.modernui.ui.screens.dmt.jiomodel.SendOtpRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.SendOtpResponse
 import com.example.modernui.ui.screens.dmt.jiomodel.ValidateUserRequest
 import com.example.modernui.ui.screens.dmt.jiomodel.ValidateUserResponse
 import com.example.modernui.ui.screens.login.otprequest
@@ -156,6 +160,13 @@ class UserRepo @Inject constructor(
     //DMT
     suspend fun jiodmtvalidatecustmoer(request : ValidateUserRequest): ValidateUserResponse {
         return apiService.jiodmtvalidatecustmoer(request)
+    }
+
+    suspend fun jiodmtcustmoerkyc(request : KycDataRequest): KycDataResponse {
+        return apiService.jiodmtcustmoerkyc(request)
+    }
+ suspend fun jiodmtsendotp(request : SendOtpRequest): SendOtpResponse {
+        return apiService.jiodmtsendotp(request)
     }
 
 

@@ -8,6 +8,9 @@ import com.example.modernui.Api.ApiEndpoints.Aeps.AEPS_TRANSACTION
 import com.example.modernui.Api.ApiEndpoints.BankList.Bank_List
 import com.example.modernui.Api.ApiEndpoints.CMS.CMS
 import com.example.modernui.Api.ApiEndpoints.DMT.JIO_VALIDATE_CUSTOMER
+import com.example.modernui.Api.ApiEndpoints.DMT.SEND_KYC_DATA
+import com.example.modernui.Api.ApiEndpoints.DMT.SEND_OTP
+import com.example.modernui.Api.ApiEndpoints.DMT.VERIFY_OTP
 import com.example.modernui.Api.ApiEndpoints.Insurance.Insurance as INSURANCE_ENDPOINT
 import com.example.modernui.Api.ApiEndpoints.Recharge.TRANSACTION as RECHARGE_TRANSACTION
 import com.example.modernui.Api.ApiEndpoints.Recharge.MOBILE_PLANS
@@ -32,8 +35,14 @@ import com.example.modernui.ui.screens.common.model.TwoFAresponce
 import com.example.modernui.ui.screens.common.model.TwoFaAuthrequest
 import com.example.modernui.ui.screens.common.model.TwoFaFinalAuthResponse
 import com.example.modernui.ui.screens.common.model.TwoFaValidationRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.KycDataRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.KycDataResponse
+import com.example.modernui.ui.screens.dmt.jiomodel.SendOtpRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.SendOtpResponse
 import com.example.modernui.ui.screens.dmt.jiomodel.ValidateUserRequest
 import com.example.modernui.ui.screens.dmt.jiomodel.ValidateUserResponse
+import com.example.modernui.ui.screens.dmt.jiomodel.VerifyOtpRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.VerifyOtpResponse
 import com.example.modernui.ui.screens.login.otprequest
 import com.example.modernui.ui.screens.mtb.model.Beniaddrequest
 import com.example.modernui.ui.screens.mtb.model.PayoutRequest
@@ -154,5 +163,23 @@ interface ApiService {
     suspend fun jiodmtvalidatecustmoer(
         @Body request: ValidateUserRequest
     ): ValidateUserResponse
+
+    @POST(SEND_KYC_DATA)
+    suspend fun jiodmtcustmoerkyc(
+        @Body request: KycDataRequest
+    ): KycDataResponse
+
+    @POST(SEND_OTP)
+    suspend fun jiodmtsendotp(
+        @Body request: SendOtpRequest
+    ): SendOtpResponse
+
+    @POST(VERIFY_OTP)
+    suspend fun jiodmtverifyotp(
+        @Body request: VerifyOtpRequest
+    ): VerifyOtpResponse
+
+
+
 
 }

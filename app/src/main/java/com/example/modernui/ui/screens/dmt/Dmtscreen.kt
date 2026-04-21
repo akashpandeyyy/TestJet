@@ -12,7 +12,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.SendToMobile
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,10 +31,26 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.modernui.ui.components.*
 import com.example.modernui.ui.screens.addharpay.FingerprintScanningAnimation
 import com.example.modernui.ui.screens.addharpay.VerificationFailedBanner
-import com.example.modernui.ui.screens.addharpay.VerificationStep
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.example.modernui.ui.screens.aeps.RdCaptureState
+import com.example.modernui.ui.screens.aeps.VerificationStep
+import com.example.modernui.ui.screens.cashdeposite.DeviceSelectionSheet
+import com.example.modernui.ui.screens.cashdeposite.FingerprintDevice
+import com.example.modernui.ui.screens.cashdeposite.SelectedDeviceCard
+import com.example.modernui.ui.theme.fingerprintDevices
 import com.example.modernui.ui.screens.dmt.jiomodel.BeneDetail
+import com.example.modernui.ui.screens.dmt.jiomodel.Data
 import com.example.modernui.ui.theme.FintechColors
 import kotlinx.coroutines.delay
+
+fun String.getInitials(): String {
+    return this.split(" ")
+        .filter { it.isNotEmpty() }
+        .take(2)
+        .map { it.first().uppercase() }
+        .joinToString("")
+}
 
 
 enum class DmtScreen {
@@ -56,9 +71,7 @@ enum class DmtScreen {
 // MOCK DATA
 // ─────────────────────────────────────────────
 
-
 private val transferLimits = listOf("1000", "2000", "5000",)
-
 
 
 // ─────────────────────────────────────────────
@@ -73,15 +86,45 @@ fun DmtScreen(
 ) {
     var currentScreen    by remember { mutableStateOf(DmtScreen.ENTER_MOBILE) }
     var senderMobile     by remember { mutableStateOf("") }
-    var selectedBenef    by remember { mutableStateOf<List<BeneDetail>?>(null) }
+    var selectedBenef    by remember { mutableStateOf<BeneDetail?>(null) }
     var transferAmount   by remember { mutableStateOf("") }
     var otpValue         by remember { mutableStateOf("") }
     var selectedTab      by remember { mutableIntStateOf(initialTab) }
+
+    val registrationSteps = if (selectedTab == 1) {
+        listOf("Biometric", "Send OTP", "Verify OTP")
+    } else {
+        listOf("Send OTP", "Verify OTP", "Biometric")
+    }
 
     val beneficiaries by viewModel.beneficiaries.collectAsState()
     val balance by viewModel.balance.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val rdCaptureState by viewModel.rdCaptureState.collectAsState()
+
+    val rdLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val data = result.data?.getStringExtra("PID_DATA")
+        if (data != null) {
+            viewModel.handleRdServiceResult(data)
+        } else {
+            viewModel.resetRdCaptureState()
+        }
+    }
+
+    LaunchedEffect(rdCaptureState) {
+        if (rdCaptureState is RdCaptureState.Capture) {
+            val state = rdCaptureState as RdCaptureState.Capture
+            val intent = android.content.Intent(state.action).apply {
+                setPackage(state.packageName)
+                putExtra(state.inputKey, state.pidOptions)
+            }
+            rdLauncher.launch(intent)
+            viewModel.resetRdCaptureState()
+        }
+    }
 
     val colorScheme = MaterialTheme.colorScheme
 
@@ -120,7 +163,14 @@ fun DmtScreen(
                     DmtScreen.PAY_SEND_OTP        -> currentScreen = DmtScreen.PAY_ENTER_AMOUNT
                     DmtScreen.PAY_VERIFY_OTP      -> currentScreen = DmtScreen.PAY_SEND_OTP
                     DmtScreen.NEW_USER_VERIFY_OTP -> currentScreen = DmtScreen.NEW_USER_SEND_OTP
-                    DmtScreen.NEW_USER_BIOMETRIC  -> currentScreen = DmtScreen.NEW_USER_VERIFY_OTP
+                    DmtScreen.NEW_USER_SEND_OTP -> {
+                        if (selectedTab == 1) currentScreen = DmtScreen.NEW_USER_BIOMETRIC
+                        else currentScreen = DmtScreen.ENTER_MOBILE
+                    }
+                    DmtScreen.NEW_USER_BIOMETRIC -> {
+                        if (selectedTab == 1) currentScreen = DmtScreen.ENTER_MOBILE
+                        else currentScreen = DmtScreen.NEW_USER_VERIFY_OTP
+                    }
                     else                          -> onBackClick()
                 }
             }
@@ -148,7 +198,8 @@ fun DmtScreen(
                     },
                     onUnknownMobile = { mobile ->
                         senderMobile  = mobile
-                        currentScreen = DmtScreen.NEW_USER_SEND_OTP
+                        if (selectedTab == 1) currentScreen = DmtScreen.NEW_USER_BIOMETRIC
+                        else currentScreen = DmtScreen.NEW_USER_SEND_OTP
                     },
                     selectedTab     = selectedTab,
                     onTabChange     = { selectedTab = it },
@@ -158,7 +209,8 @@ fun DmtScreen(
                 DmtScreen.BENEFICIARY_LIST -> BeneficiaryListScreen(
                     senderMobile    = senderMobile,
                     beneficiaries   = beneficiaries,
-                    onPayClick      = { selectedBenef
+                    onPayClick      = { benef ->
+                        selectedBenef = benef
                         currentScreen = DmtScreen.PAY_ENTER_AMOUNT
                     }
                 )
@@ -212,7 +264,9 @@ fun DmtScreen(
                             if (success) currentScreen = DmtScreen.NEW_USER_VERIFY_OTP
                         }
                     },
-                    isLoading    = isLoading
+                    isLoading    = isLoading,
+                    currentStep  = if (selectedTab == 1) 2 else 1,
+                    steps        = registrationSteps
                 )
 
                 DmtScreen.NEW_USER_VERIFY_OTP -> NewUserVerifyOtpScreen(
@@ -221,14 +275,26 @@ fun DmtScreen(
                     senderMobile = senderMobile,
                     onVerified  = {
                         viewModel.verifyOtp(otpValue) { success ->
-                            if (success) currentScreen = DmtScreen.NEW_USER_BIOMETRIC
+                            if (success) {
+                                if (selectedTab == 1) currentScreen = DmtScreen.NEW_USER_SUCCESS
+                                else currentScreen = DmtScreen.NEW_USER_BIOMETRIC
+                            }
                         }
                     },
-                    isLoading   = isLoading
+                    isLoading   = isLoading,
+                    currentStep  = if (selectedTab == 1) 3 else 2,
+                    steps        = registrationSteps
                 )
 
                 DmtScreen.NEW_USER_BIOMETRIC -> NewUserBiometricScreen(
-                    onVerified = { currentScreen = DmtScreen.NEW_USER_SUCCESS }
+                    onVerified = {
+                        if (selectedTab == 1) currentScreen = DmtScreen.NEW_USER_SEND_OTP
+                        else currentScreen = DmtScreen.NEW_USER_SUCCESS
+                    },
+                    onDeviceClick = { /* Handled in screen if needed, but usually just shows sheet */ },
+                    viewModel = viewModel,
+                    currentStep  = if (selectedTab == 1) 1 else 3,
+                    steps        = registrationSteps
                 )
 
                 DmtScreen.NEW_USER_SUCCESS -> NewUserSuccessScreen(
@@ -269,7 +335,7 @@ fun EnterMobileScreen(
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         NavyHeaderCard(
-            icon     = Icons.AutoMirrored.Filled.SendToMobile,
+            icon     = Icons.Default.SendToMobile,
             title    = "Domestic Money Transfer",
             subtitle = "Send money instantly to any bank account"
         )
@@ -399,7 +465,19 @@ fun EnterMobileScreen(
 
                 NavyPrimaryButton(
                     text    = "Check & Continue",
-                    onClick = { viewModel.checkMobile(mobile) },
+                    onClick = {
+                        if (selectedTab == 1) {
+                            viewModel.jiocheckMobile(mobile) { isFound ->
+                                if (isFound) onKnownMobile(mobile)
+                                else onUnknownMobile(mobile)
+                            }
+                        } else if (selectedTab == 0) {
+                            viewModel.airtelcheckMobile(mobile) { isFound ->
+                                if (isFound) onKnownMobile(mobile)
+                                else onUnknownMobile(mobile)
+                            }
+                        }
+                    },
                     enabled = isReady && !isLoading,
                     icon    = Icons.Default.Search
                 )
@@ -419,7 +497,7 @@ fun EnterMobileScreen(
 fun BeneficiaryListScreen(
     senderMobile:  String,
     beneficiaries: List<BeneDetail>,
-    onPayClick:    () -> Unit
+    onPayClick:    (BeneDetail) -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -500,7 +578,7 @@ fun BeneficiaryListScreen(
         beneficiaries.forEach { benef ->
             BeneficiaryCard(
                 beneficiary = benef,
-                onPayClick  = { onPayClick() }
+                onPayClick  = { onPayClick(benef) }
             )
         }
 
@@ -533,7 +611,7 @@ fun BeneficiaryCard(
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Text(
-                        beneficiary.id,
+                        beneficiary.beneName.getInitials(),
                         color      = FintechColors.NavyDark,
                         fontWeight = FontWeight.Bold,
                         fontSize   = 16.sp
@@ -546,7 +624,7 @@ fun BeneficiaryCard(
                     style      = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color      = colorScheme.onSurface)
-                Text(beneficiary.mobile,
+                Text(beneficiary.ifsc,
                     style = MaterialTheme.typography.labelSmall,
                     color = colorScheme.outline)
                 Text(beneficiary.account,
@@ -578,7 +656,7 @@ fun BeneficiaryCard(
 
 @Composable
 fun PayEnterAmountScreen(
-    beneficiary:    Beneficiary,
+    beneficiary:    BeneDetail,
     amount:         String,
     onAmountChange: (String) -> Unit,
     onProceed:      () -> Unit,
@@ -667,7 +745,7 @@ fun PayEnterAmountScreen(
 @Composable
 fun PaySendOtpScreen(
     senderMobile: String,
-    beneficiary:  Beneficiary,
+    beneficiary:  BeneDetail,
     amount:       String,
     onOtpSent:    () -> Unit
 ) {
@@ -719,10 +797,10 @@ fun PaySendOtpScreen(
                         style      = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(4.dp))
-                    Text("to ${beneficiary.name}",
+                    Text("to ${beneficiary.beneName}",
                         color = Color.White.copy(alpha = 0.9f),
                         style = MaterialTheme.typography.bodyMedium)
-                    Text(beneficiary.bankName,
+                    Text(beneficiary.ifsc,
                         color = Color.White.copy(alpha = 0.7f),
                         style = MaterialTheme.typography.labelSmall)
                 }
@@ -769,7 +847,7 @@ fun PayVerifyOtpScreen(
     otp:          String,
     onOtpChange:  (String) -> Unit,
     senderMobile: String,
-    beneficiary:  Beneficiary,
+    beneficiary:  BeneDetail,
     amount:       String,
     onVerified:   () -> Unit,
     isLoading:    Boolean = false,
@@ -860,7 +938,7 @@ fun PayVerifyOtpScreen(
 
 @Composable
 fun TransactionSuccessScreen(
-    beneficiary: Beneficiary,
+    beneficiary: BeneDetail,
     amount:      String,
     onDone:      () -> Unit
 ) {
@@ -907,7 +985,7 @@ fun TransactionSuccessScreen(
             color      = FintechColors.SuccessGreenDark,
             textAlign  = TextAlign.Center)
 
-        Text("₹$amount sent to ${beneficiary.name}",
+        Text("₹$amount sent to ${beneficiary.beneName}",
             style     = MaterialTheme.typography.bodyMedium,
             color     = colorScheme.outline,
             textAlign = TextAlign.Center)
@@ -938,9 +1016,8 @@ fun TransactionSuccessScreen(
                 HorizontalDivider(color = FintechColors.NavyDark.copy(alpha = 0.12f))
 
                 listOf(
-                    "Beneficiary" to beneficiary.name,
-                    "Account"     to beneficiary.accountNo,
-                    "Bank"        to beneficiary.bankName,
+                    "Beneficiary" to beneficiary.beneName,
+                    "Account"     to beneficiary.account,
                     "IFSC"        to beneficiary.ifsc,
                     "Amount"      to "₹$amount",
                     "Status"      to "SUCCESS",
@@ -982,7 +1059,9 @@ fun TransactionSuccessScreen(
 fun NewUserSendOtpScreen(
     senderMobile: String,
     onOtpSent:    () -> Unit,
-    isLoading:    Boolean = false
+    isLoading:    Boolean = false,
+    currentStep:  Int,
+    steps:        List<String>
 ) {
     Column(
         modifier = Modifier
@@ -1017,7 +1096,7 @@ fun NewUserSendOtpScreen(
             }
         }
 
-        SectionCard(title = "Step 1 — OTP Verification", icon = Icons.Default.Sms) {
+        SectionCard(title = "Step $currentStep — OTP Verification", icon = Icons.Default.Sms) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("We'll send an OTP to verify this number",
                     style = MaterialTheme.typography.bodySmall,
@@ -1036,11 +1115,11 @@ fun NewUserSendOtpScreen(
             }
         }
 
-        RegistrationStepBar(currentStep = 1)
+        RegistrationStepBar(currentStep = currentStep, steps = steps)
 
         NavyPrimaryButton(
             text    = if (isLoading) "Sending..." else "Send OTP",
-            onClick = onOtpSent,
+            onClick = {},
             enabled = !isLoading,
             icon    = Icons.Default.Sms
         )
@@ -1058,7 +1137,9 @@ fun NewUserVerifyOtpScreen(
     onOtpChange:  (String) -> Unit,
     senderMobile: String,
     onVerified:   () -> Unit,
-    isLoading:    Boolean = false
+    isLoading:    Boolean = false,
+    currentStep:  Int,
+    steps:        List<String>
 ) {
     var resendTimer by remember { mutableIntStateOf(30) }
 
@@ -1073,9 +1154,9 @@ fun NewUserVerifyOtpScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        RegistrationStepBar(currentStep = 1)
+        RegistrationStepBar(currentStep = currentStep, steps = steps)
 
-        SectionCard(title = "Enter OTP", icon = Icons.Default.Password) {
+        SectionCard(title = "Step $currentStep — Enter OTP", icon = Icons.Default.Password) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("Enter the 6-digit OTP sent to +91 $senderMobile",
                     style = MaterialTheme.typography.bodySmall,
@@ -1124,9 +1205,17 @@ fun NewUserVerifyOtpScreen(
 
 @Composable
 fun NewUserBiometricScreen(
-    onVerified: () -> Unit
+    onVerified: () -> Unit,
+    onDeviceClick: () -> Unit,
+    viewModel: DmtViewModel,
+    currentStep: Int,
+    steps: List<String>
 ) {
-    var scanState by remember { mutableStateOf(VerificationStep.IDLE) }
+    val scanState by viewModel.scanState.collectAsState()
+    val aadhaarNumber by viewModel.aadhaarNumber.collectAsState()
+    val isAadhaarValid = aadhaarNumber.length == 12
+    val device by viewModel.selectedDevice.collectAsState()
+    var showDeviceSheet by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -1135,10 +1224,39 @@ fun NewUserBiometricScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        RegistrationStepBar(currentStep = 2)
+        RegistrationStepBar(currentStep = currentStep, steps = steps)
 
-        SectionCard(title = "Step 2 — Biometric Verification", icon = Icons.Default.Fingerprint) {
+        SectionCard(title = "Step $currentStep — Biometric Verification", icon = Icons.Default.Fingerprint) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
+                NavyOutlinedField(
+                    value = aadhaarNumber,
+                    onValueChange = { if (it.all(Char::isDigit) && it.length <= 12) viewModel.aadhaarNumber.value = it },
+                    label = "Aadhaar Number *",
+                    placeholder = "Enter 12-digit Aadhaar",
+                    leadingIcon = Icons.Default.CreditCard,
+                    keyboardType = KeyboardType.Number,
+                    maxLength = 12,
+                    isError = aadhaarNumber.isNotEmpty() && aadhaarNumber.length != 12,
+                    errorMessage = "Enter a valid 12-digit Aadhaar"
+                )
+
+                SelectedDeviceCard(
+                    device = device,
+                    onClick = { showDeviceSheet = true }
+                )
+
+                if (showDeviceSheet) {
+                    DeviceSelectionSheet(
+                        devices = com.example.modernui.ui.screens.cashdeposite.fingerprintDevicesMock,
+                        selectedDeviceId = device.id,
+                        onDismiss = { showDeviceSheet = false },
+                        onDeviceSelected = {
+                            viewModel.onDeviceSelected(it)
+                            showDeviceSheet = false
+                        }
+                    )
+                }
 
                 when (scanState) {
                     VerificationStep.IDLE -> {
@@ -1154,24 +1272,22 @@ fun NewUserBiometricScreen(
                             ) {
                                 Icon(Icons.Default.Info, null,
                                     tint = FintechColors.NavyDark, modifier = Modifier.size(18.dp))
-                                Text("Place sender's finger on the biometric device to complete registration",
+                                Text("Enter Aadhaar and place sender's finger on the biometric device",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = FintechColors.NavyDark)
                             }
                         }
                         NavyPrimaryButton(
                             text    = "Start Biometric Scan",
-                            onClick = { scanState = VerificationStep.SCANNING },
+                            onClick = { viewModel.initiateBiometricScan() },
+                            enabled = isAadhaarValid,
                             icon    = Icons.Default.Fingerprint
                         )
                     }
 
                     VerificationStep.SCANNING -> {
                         FingerprintScanningAnimation(
-                            onScanComplete = { success ->
-                                scanState = if (success) VerificationStep.SUCCESS
-                                else VerificationStep.FAILED
-                            }
+                            onScanComplete = { /* Handled via RD Service result */ }
                         )
                     }
 
@@ -1197,8 +1313,8 @@ fun NewUserBiometricScreen(
                         }
                     }
 
-                    VerificationStep.FAILED -> {
-                        VerificationFailedBanner(onRetry = { scanState = VerificationStep.IDLE })
+                    VerificationStep.ERROR -> {
+                        VerificationFailedBanner(onRetry = { viewModel.resetRdCaptureState() })
                     }
                 }
             }
@@ -1318,7 +1434,7 @@ fun NewUserSuccessScreen(
 // ─────────────────────────────────────────────
 
 @Composable
-fun BeneficiarySummaryStrip(beneficiary: Beneficiary) {
+fun BeneficiarySummaryStrip(beneficiary: BeneDetail) {
     val colorScheme = MaterialTheme.colorScheme
     Surface(
         shape    = RoundedCornerShape(12.dp),
@@ -1336,18 +1452,18 @@ fun BeneficiarySummaryStrip(beneficiary: Beneficiary) {
                 modifier = Modifier.size(38.dp)
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Text(beneficiary.initials,
+                    Text(beneficiary.beneName.getInitials(),
                         color      = FintechColors.NavyDark,
                         fontWeight = FontWeight.Bold,
                         fontSize   = 13.sp)
                 }
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text(beneficiary.name,
+                Text(beneficiary.beneName,
                     style      = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Bold,
                     color      = FintechColors.NavyDark)
-                Text("${beneficiary.bankName}  •  ${beneficiary.accountNo}",
+                Text("${beneficiary.ifsc}  •  ${beneficiary.account}",
                     style = MaterialTheme.typography.labelSmall,
                     color = colorScheme.outline)
             }
@@ -1356,7 +1472,7 @@ fun BeneficiarySummaryStrip(beneficiary: Beneficiary) {
 }
 
 @Composable
-fun TransferSummaryRow(beneficiary: Beneficiary, amount: String) {
+fun TransferSummaryRow(beneficiary: BeneDetail, amount: String) {
     val colorScheme = MaterialTheme.colorScheme
     Surface(
         shape  = RoundedCornerShape(10.dp),
@@ -1369,7 +1485,7 @@ fun TransferSummaryRow(beneficiary: Beneficiary, amount: String) {
         ) {
             Column {
                 Text("To", style = MaterialTheme.typography.labelSmall, color = colorScheme.outline)
-                Text(beneficiary.name,
+                Text(beneficiary.beneName,
                     style      = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Bold)
             }
@@ -1445,9 +1561,8 @@ fun OtpInputRow(
 
 /** Registration progress bar — 3 steps */
 @Composable
-fun RegistrationStepBar(currentStep: Int) {
+fun RegistrationStepBar(currentStep: Int, steps: List<String>) {
     val colorScheme = MaterialTheme.colorScheme
-    val steps = listOf("OTP Sent", "OTP Verified", "Biometric")
 
     Row(
         modifier              = Modifier.fillMaxWidth(),
@@ -1527,7 +1642,9 @@ fun PreviewBeneficiaryList() {
     MaterialTheme {
         BeneficiaryListScreen(
             senderMobile  = "9876543210",
-            beneficiaries = mockBeneficiaries,
+            beneficiaries = listOf(
+                BeneDetail("1234567890", "Ansh Sharma", "0", 1, "SBIN0001234", "9876543210")
+            ),
             onPayClick    = {}
         )
     }
@@ -1546,7 +1663,7 @@ fun PreviewNewUserSuccess() {
 fun PreviewTransactionSuccess() {
     MaterialTheme {
         TransactionSuccessScreen(
-            beneficiary = mockBeneficiaries[0],
+            beneficiary = BeneDetail("1234567890", "Ansh Sharma", "0", 1, "SBIN0001234", "9876543210"),
             amount      = "5000",
             onDone      = {}
         )

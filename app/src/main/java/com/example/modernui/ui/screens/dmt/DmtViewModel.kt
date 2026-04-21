@@ -7,12 +7,19 @@ import androidx.lifecycle.viewModelScope
 import com.example.modernui.Api.UserRepo
 import com.example.modernui.core.datastore.SessionManager
 import com.example.modernui.core.location.UserLocationProvider
-import com.example.modernui.ui.screens.common.TwoFaUiState
-import com.example.modernui.ui.screens.common.model.TwoFaAuthrequest
+import com.example.modernui.ui.screens.aeps.RdCaptureState
+import com.example.modernui.ui.screens.aeps.VerificationStep
+import com.example.modernui.ui.screens.cashdeposite.FingerprintDevice
+import com.example.modernui.ui.screens.cashdeposite.fingerprintDevicesMock
+import com.example.modernui.ui.screens.dmt.jiomodel.BeneDetail
 import com.example.modernui.ui.screens.dmt.jiomodel.ValidateUserRequest
+import com.example.modernui.ui.components.intentpackage.RdHelper
+import com.example.modernui.ui.screens.dmt.jiomodel.KycDataRequest
+import kotlin.collections.emptyList
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,9 +44,23 @@ class DmtViewModel @Inject constructor(
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+    private val _navigationEvent = MutableSharedFlow<DmtScreen>()
 
-    private val _beneficiaries = MutableStateFlow<List<Beneficiary>>(emptyList())
-    val beneficiaries: StateFlow<List<Beneficiary>> = _beneficiaries.asStateFlow()
+    private val _beneficiaries = MutableStateFlow<List<BeneDetail>>(emptyList())
+    val beneficiaries: StateFlow<List<BeneDetail>> = _beneficiaries.asStateFlow()
+
+    private val _rdCaptureState = MutableStateFlow<RdCaptureState>(RdCaptureState.Idle)
+    val rdCaptureState: StateFlow<RdCaptureState> = _rdCaptureState.asStateFlow()
+
+    private val _scanState = MutableStateFlow(VerificationStep.IDLE)
+    val scanState: StateFlow<VerificationStep> = _scanState.asStateFlow()
+
+    val biometricData = MutableStateFlow("")
+    val aadhaarNumber = MutableStateFlow("")
+    val senderNumber = MutableStateFlow("")
+    val isotp = MutableStateFlow("")
+    val selectedDevice = MutableStateFlow<FingerprintDevice>(fingerprintDevicesMock.first())
+
 
     init {
         viewModelScope.launch {
@@ -59,34 +80,63 @@ class DmtViewModel @Inject constructor(
                     _balance.value = "₹${response.data?.total ?: 0.0}"
                 }
             } catch (e: Exception) {
-                // Handle error
+                _errorMessage.value = e.message ?: "Failed to fetch balance"
             }
         }
     }
 
-    fun checkMobile(mobile: String) {
+
+
+    fun jiocheckMobile(mobile: String, onUserFound: (Boolean) -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true
-            _errorMessage.value = null
+            senderNumber.value=mobile
             try {
                 val location = locationProvider.getCurrentLocation()
-                var  latitude = location?.first  // Actual Lat
-                var longitude = location?.second // Actual Lng
                 val request = ValidateUserRequest(
-                    mobile=mobile,
-                    latitude = latitude,  // Actual Lat
-                    longitude = longitude, // Actual Lng
+                    mobile = mobile,
+                    latitude = location?.first,
+                    longitude = location?.second,
                 )
 
-                val response =userRepo.jiodmtvalidatecustmoer(request)
-                if ( response.data!= null) {
+                val response = userRepo.jiodmtvalidatecustmoer(request)
 
-                   Log.e("Validate user","API hit with good response")
+                if (response.status == 22 && response.data != null) {
 
+                    _beneficiaries.value = response.data.beneDetails
+                    onUserFound(true)
+                    val navigationEvent = _navigationEvent
                 } else {
-                    Log.e("Validate user","Error occurs")
+                    onUserFound(false) // New user hai
                 }
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Failed to check mobile"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+    fun airtelcheckMobile(mobile: String, onUserFound: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val location = locationProvider.getCurrentLocation()
+                val request = ValidateUserRequest(
+                    mobile = mobile,
+                    latitude = location?.first,
+                    longitude = location?.second,
+                )
 
+                val response = userRepo.jiodmtvalidatecustmoer(request)
+
+                if (response.status == 22 && response.data != null) {
+
+                    _beneficiaries.value = response.data.beneDetails
+                    onUserFound(true)
+                    val navigationEvent = _navigationEvent
+                } else {
+                    onUserFound(false) // New user
+                }
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Failed to check mobile"
             } finally {
@@ -99,14 +149,115 @@ class DmtViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                delay(1500)
+
+                delay(1000)
                 onResult(true)
             } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Failed to send OTP"
                 onResult(false)
             } finally {
                 _isLoading.value = false
             }
         }
+    }
+
+    fun handleRdServiceResult(responseData: String) {
+        val errCodeMatch = Regex("errCode\\s*=\\s*[\"']([^\"']*)[\"']", RegexOption.IGNORE_CASE).find(responseData)
+        val errCode = errCodeMatch?.groupValues?.get(1)
+
+        if (errCode == "0") {
+            biometricData.value = responseData
+            Log.d("PID_XML", biometricData.value)
+            ekyc()
+            _scanState.value = VerificationStep.SUCCESS
+
+        } else {
+            val errInfoMatch = Regex("errInfo\\s*=\\s*[\"']([^\"']*)[\"']", RegexOption.IGNORE_CASE).find(responseData)
+            val errInfo = errInfoMatch?.groupValues?.get(1) ?: "Verification Failed"
+            _errorMessage.value = "$errInfo (Code: $errCode)"
+            _scanState.value = VerificationStep.ERROR
+        }
+    }
+    fun ekyc(){
+        viewModelScope.launch {
+            _isLoading.value = true
+            Log.d("Adhar data",aadhaarNumber.value)
+            Log.d("sender number",senderNumber.value)
+            Log.d("biometric",biometricData.value)
+            try {
+                val location = locationProvider.getCurrentLocation()
+                val request = KycDataRequest(
+                    aadhaar =aadhaarNumber.value,
+                    biometric = biometricData.value,
+                    mobile = senderNumber.value,
+                    latitude = location?.first,
+                    longitude = location?.second,
+
+
+                )
+
+                val response = userRepo.jiodmtcustmoerkyc(request)
+
+                if (response.status == 1 ) {
+                    isotp.value= 1.toString()
+                    Log.d("jiodmtcustmoerkyc",response.toString())
+
+                } else {
+
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Failed to check mobile"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+
+    }
+
+    fun initiateBiometricScan() {
+        _scanState.value = VerificationStep.SCANNING
+        viewModelScope.launch {
+            try {
+                val currentDevice = selectedDevice.value.id
+                val deviceId = when (currentDevice) {
+                    "face_scan" -> "face"
+                    "mantra_mfs110" -> "mfs110"
+                    "mantra_iris" -> "mantra_mis100v2"
+                    "morpho_l1" -> "morpho_l1"
+                    else -> currentDevice
+                }
+
+                val pidOptData = when (deviceId) {
+                    "face" -> RdHelper.faceType
+                    "mfs110", "morpho_l1" -> RdHelper.fingType
+                    "mantra_mis100v2" -> RdHelper.irisType
+                    else -> RdHelper.fingType
+                }
+
+                val pidOptions = RdHelper.makePidXm(deviceId, pidOptData)
+                val action = RdHelper.getAction(deviceId)
+                val packageName = RdHelper.getPackage(deviceId)
+                val inputKey = RdHelper.getInputKey(deviceId)
+
+                _rdCaptureState.value = RdCaptureState.Capture(
+                    action = action,
+                    packageName = packageName,
+                    inputKey = inputKey,
+                    pidOptions = pidOptions
+                )
+            } catch (e: Exception) {
+                _errorMessage.value = "Capture initialization failed: ${e.message}"
+            }
+        }
+    }
+
+    fun resetRdCaptureState() {
+        _rdCaptureState.value = RdCaptureState.Idle
+        _scanState.value = VerificationStep.IDLE
+    }
+
+    fun onDeviceSelected(device: FingerprintDevice) {
+        selectedDevice.value = device
     }
 
     fun verifyOtp(otp: String, onResult: (Boolean) -> Unit) {
@@ -123,7 +274,7 @@ class DmtViewModel @Inject constructor(
         }
     }
 
-    fun performTransfer(beneficiary: Beneficiary, amount: String, onResult: (Boolean, String) -> Unit) {
+    fun performTransfer(beneficiary: BeneDetail, amount: String, onResult: (Boolean, String) -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -137,12 +288,5 @@ class DmtViewModel @Inject constructor(
         }
     }
 
-    private fun getMockBeneficiaries(): List<Beneficiary> {
-        return listOf(
-            Beneficiary("b1", "Ansh Sharma", "XXXX XXXX 4291", "State Bank of India", "SBIN0001234", "RS"),
-            Beneficiary("b2", "Ayush Mishra", "XXXX XXXX 8803", "HDFC Bank", "HDFC0005678", "PV"),
-            Beneficiary("b3", "Akhil Dwivedi", "XXXX XXXX 1147", "ICICI Bank", "ICIC0009876", "AG"),
-            Beneficiary("b4", "Anurag Dwivedi", "XXXX XXXX 3366", "Punjab National Bank", "PUNB0004321", "SD"),
-        )
-    }
+
 }
