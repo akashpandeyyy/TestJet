@@ -17,12 +17,20 @@ import com.example.modernui.ui.screens.common.model.TwoFAresponce
 import com.example.modernui.ui.screens.common.model.TwoFaAuthrequest
 import com.example.modernui.ui.screens.common.model.TwoFaFinalAuthResponse
 import com.example.modernui.ui.screens.common.model.TwoFaValidationRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.CreateTnxResponse
+import com.example.modernui.ui.screens.dmt.jiomodel.CreateTxnRequest
 import com.example.modernui.ui.screens.dmt.jiomodel.KycDataRequest
 import com.example.modernui.ui.screens.dmt.jiomodel.KycDataResponse
+import com.example.modernui.ui.screens.dmt.jiomodel.ReValidateTnxRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.ReValidateTnxResponce
 import com.example.modernui.ui.screens.dmt.jiomodel.SendOtpRequest
 import com.example.modernui.ui.screens.dmt.jiomodel.SendOtpResponse
+import com.example.modernui.ui.screens.dmt.jiomodel.ValidateTnxRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.ValidateTnxResponce
 import com.example.modernui.ui.screens.dmt.jiomodel.ValidateUserRequest
 import com.example.modernui.ui.screens.dmt.jiomodel.ValidateUserResponse
+import com.example.modernui.ui.screens.dmt.jiomodel.VerifyOtpRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.VerifyOtpResponse
 import com.example.modernui.ui.screens.login.otprequest
 import com.example.modernui.ui.screens.mtb.model.Beniaddrequest
 import com.example.modernui.ui.screens.mtb.model.PayoutRequest
@@ -167,6 +175,18 @@ class UserRepo @Inject constructor(
     }
  suspend fun jiodmtsendotp(request : SendOtpRequest): SendOtpResponse {
         return apiService.jiodmtsendotp(request)
+    }
+    suspend fun jiodmtverifyotp(request : VerifyOtpRequest): VerifyOtpResponse {
+        return apiService.jiodmtverifyotp(request)
+    }
+    suspend fun createtnx(request : CreateTxnRequest): CreateTnxResponse {
+        return apiService.createtnx(request)
+    }
+    suspend fun validatetnx(request : ValidateTnxRequest): ValidateTnxResponce {
+        return apiService.validatetnx(request)
+    }
+    suspend fun resendtnx(request : ReValidateTnxRequest): ReValidateTnxResponce {
+        return apiService.resendtnx(request)
     }
 
 

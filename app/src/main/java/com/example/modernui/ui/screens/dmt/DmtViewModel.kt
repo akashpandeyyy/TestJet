@@ -2,6 +2,7 @@ package com.example.modernui.ui.screens.dmt
 
 import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.modernui.Api.UserRepo
@@ -14,7 +15,10 @@ import com.example.modernui.ui.screens.cashdeposite.fingerprintDevicesMock
 import com.example.modernui.ui.screens.dmt.jiomodel.BeneDetail
 import com.example.modernui.ui.screens.dmt.jiomodel.ValidateUserRequest
 import com.example.modernui.ui.components.intentpackage.RdHelper
+import com.example.modernui.ui.screens.dmt.jiomodel.CreateTxnRequest
 import com.example.modernui.ui.screens.dmt.jiomodel.KycDataRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.ReValidateTnxRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.ValidateTnxRequest
 import kotlin.collections.emptyList
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -59,6 +63,8 @@ class DmtViewModel @Inject constructor(
     val aadhaarNumber = MutableStateFlow("")
     val senderNumber = MutableStateFlow("")
     val isotp = MutableStateFlow("")
+    val trfAmt = MutableStateFlow("")
+    val trfamtreqid = MutableStateFlow("")
     val selectedDevice = MutableStateFlow<FingerprintDevice>(fingerprintDevicesMock.first())
 
 
@@ -85,7 +91,11 @@ class DmtViewModel @Inject constructor(
         }
     }
 
-
+    fun ontrfamtChange(value: String) {
+        if (value.all { it.isDigit() }) {
+            trfAmt.value = value
+        }
+    }
 
     fun jiocheckMobile(mobile: String, onUserFound: (Boolean) -> Unit) {
         viewModelScope.launch {
@@ -119,29 +129,7 @@ class DmtViewModel @Inject constructor(
     fun airtelcheckMobile(mobile: String, onUserFound: (Boolean) -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true
-            try {
-                val location = locationProvider.getCurrentLocation()
-                val request = ValidateUserRequest(
-                    mobile = mobile,
-                    latitude = location?.first,
-                    longitude = location?.second,
-                )
-
-                val response = userRepo.jiodmtvalidatecustmoer(request)
-
-                if (response.status == 22 && response.data != null) {
-
-                    _beneficiaries.value = response.data.beneDetails
-                    onUserFound(true)
-                    val navigationEvent = _navigationEvent
-                } else {
-                    onUserFound(false) // New user
-                }
-            } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Failed to check mobile"
-            } finally {
-                _isLoading.value = false
-            }
+        Toast.makeText(context,"babu rukk jao na ", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -178,6 +166,7 @@ class DmtViewModel @Inject constructor(
             _scanState.value = VerificationStep.ERROR
         }
     }
+
     fun ekyc(){
         viewModelScope.launch {
             _isLoading.value = true
@@ -192,8 +181,6 @@ class DmtViewModel @Inject constructor(
                     mobile = senderNumber.value,
                     latitude = location?.first,
                     longitude = location?.second,
-
-
                 )
 
                 val response = userRepo.jiodmtcustmoerkyc(request)
@@ -274,18 +261,80 @@ class DmtViewModel @Inject constructor(
         }
     }
 
-    fun performTransfer(beneficiary: BeneDetail, amount: String, onResult: (Boolean, String) -> Unit) {
+suspend fun resendOtp() {
+    try {
+        val request = ReValidateTnxRequest(
+            requestId = trfamtreqid.value
+        )
+        val response = userRepo.resendtnx(request)
+        if (response.status == 1) {
+            Toast.makeText(context, response.message, Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, response.message, Toast.LENGTH_SHORT).show()
+        }
+    } catch (e: Exception) {
+        Toast.makeText(context, e.message, Toast.LENGTH_LONG).show()
+    }
+}
+
+    fun verifytnxotp(otpp: String, onResult: (Boolean, String) -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                delay(2000)
-                onResult(true, "DMT transaction of ₹$amount successful")
+
+
+                val request= ValidateTnxRequest(
+                    requestId = trfamtreqid.value,
+                   otp = otpp
+                )
+                 val response= userRepo.validatetnx(request)
+                if (response.status==1 ){
+                onResult(true, "DMT transaction of successful")
+                } else{
+
+                    onResult(false, response.message ?: "Transfer failed")
+                }
             } catch (e: Exception) {
                 onResult(false, e.message ?: "Transfer failed")
             } finally {
                 _isLoading.value = false
             }
         }
+    }
+    fun tnxvaliotp(amt: String,beniid : String, ifsc: String, acount : String, name: String, onResult: (Boolean) -> Unit){
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val location = locationProvider.getCurrentLocation()
+                val request= CreateTxnRequest(
+                    amount = amt,
+                    beneId = beniid,
+                    mobile =senderNumber.value ,
+                    account = acount,
+                    ifsc = ifsc,
+                    name = name,
+                    latitude = location?.first,
+                    longitude = location?.second
+
+                )
+                val response= userRepo.createtnx(request)
+                if (response.status==1 && response.data!=null){
+                    trfamtreqid.value=response.data.requestId
+                    onResult(true)
+
+                }else if(response.status==0){
+                    Toast.makeText(context, response.message, Toast.LENGTH_SHORT).show();
+
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show();
+                onResult(false)
+
+            } finally {
+                _isLoading.value = false
+            }
+        }
+
     }
 
 

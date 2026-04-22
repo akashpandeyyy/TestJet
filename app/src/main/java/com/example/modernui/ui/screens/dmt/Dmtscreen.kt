@@ -4,7 +4,6 @@ import android.content.res.Configuration
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -33,16 +32,16 @@ import com.example.modernui.ui.screens.addharpay.FingerprintScanningAnimation
 import com.example.modernui.ui.screens.addharpay.VerificationFailedBanner
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.viewModelScope
 import com.example.modernui.ui.screens.aeps.RdCaptureState
 import com.example.modernui.ui.screens.aeps.VerificationStep
 import com.example.modernui.ui.screens.cashdeposite.DeviceSelectionSheet
-import com.example.modernui.ui.screens.cashdeposite.FingerprintDevice
 import com.example.modernui.ui.screens.cashdeposite.SelectedDeviceCard
-import com.example.modernui.ui.theme.fingerprintDevices
 import com.example.modernui.ui.screens.dmt.jiomodel.BeneDetail
-import com.example.modernui.ui.screens.dmt.jiomodel.Data
+import com.example.modernui.ui.screens.dmt.jiomodel.Dataa
 import com.example.modernui.ui.theme.FintechColors
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 fun String.getInitials(): String {
     return this.split(" ")
@@ -88,6 +87,7 @@ fun DmtScreen(
     var senderMobile     by remember { mutableStateOf("") }
     var selectedBenef    by remember { mutableStateOf<BeneDetail?>(null) }
     var transferAmount   by remember { mutableStateOf("") }
+    var dataa by remember { mutableStateOf<Dataa?>(null) }
     var otpValue         by remember { mutableStateOf("") }
     var selectedTab      by remember { mutableIntStateOf(initialTab) }
 
@@ -171,7 +171,7 @@ fun DmtScreen(
                         if (selectedTab == 1) currentScreen = DmtScreen.ENTER_MOBILE
                         else currentScreen = DmtScreen.NEW_USER_VERIFY_OTP
                     }
-                    else                          -> onBackClick()
+                    else    -> onBackClick()
                 }
             }
         )
@@ -220,7 +220,12 @@ fun DmtScreen(
                     amount         = transferAmount,
                     onAmountChange = { transferAmount = it },
                     onProceed      = {
-                        viewModel.sendOtp(senderMobile) { success ->
+                        viewModel.tnxvaliotp(transferAmount,
+                            selectedBenef!!.id.toString(),
+                            selectedBenef!!.ifsc,
+                            selectedBenef!!.account,
+                            selectedBenef!!.beneName)
+                        { success ->
                             if (success) currentScreen = DmtScreen.PAY_VERIFY_OTP
                         }
                     },
@@ -236,12 +241,15 @@ fun DmtScreen(
                     beneficiary  = selectedBenef!!,
                     amount       = transferAmount,
                     onVerified  = {
-                        viewModel.performTransfer(selectedBenef!!, transferAmount) { success, _ ->
+                        viewModel.verifytnxotp(otpValue, ) { success, _ ->
                             if (success) currentScreen = DmtScreen.TRANSACTION_SUCCESS
                         }
                     },
                     isLoading   = isLoading,
-                    onResend    = { viewModel.sendOtp(senderMobile) {} }
+                   onResend    = {
+                       viewModel.viewModelScope.launch{viewModel.resendOtp()}
+//                   { success, _ -> if (success) currentScreen = DmtScreen.PAY_VERIFY_OTP }
+                   }
                 )
 
                 DmtScreen.TRANSACTION_SUCCESS -> TransactionSuccessScreen(
@@ -254,7 +262,8 @@ fun DmtScreen(
                         transferAmount = ""
                         otpValue       = ""
                         currentScreen  = DmtScreen.ENTER_MOBILE
-                    }
+                    },
+                    trans = dataa
                 )
 
                 DmtScreen.NEW_USER_SEND_OTP -> NewUserSendOtpScreen(
@@ -940,7 +949,9 @@ fun PayVerifyOtpScreen(
 fun TransactionSuccessScreen(
     beneficiary: BeneDetail,
     amount:      String,
-    onDone:      () -> Unit
+    onDone:      () -> Unit,
+    trans: Dataa?
+
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -979,7 +990,7 @@ fun TransactionSuccessScreen(
             }
         }
 
-        Text("Transfer Successful!",
+        Text("Transfer ${trans?.status}",
             style      = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color      = FintechColors.SuccessGreenDark,
@@ -1020,8 +1031,9 @@ fun TransactionSuccessScreen(
                     "Account"     to beneficiary.account,
                     "IFSC"        to beneficiary.ifsc,
                     "Amount"      to "₹$amount",
-                    "Status"      to "SUCCESS",
-                    "Txn Ref"     to "DMT${System.currentTimeMillis().toString().takeLast(8)}"
+                    "Status"      to trans?.status,
+                    "Txn Ref"     to trans?.bankTransactionId,
+                    "Remark"      to trans?.remark
                 ).forEach { (label, value) ->
                     Row(
                         modifier              = Modifier.fillMaxWidth(),
@@ -1030,11 +1042,13 @@ fun TransactionSuccessScreen(
                         Text(label,
                             style = MaterialTheme.typography.bodySmall,
                             color = colorScheme.outline)
-                        Text(value,
-                            style      = MaterialTheme.typography.bodySmall,
-                            fontWeight = if (label == "Status") FontWeight.Bold else FontWeight.Medium,
-                            color      = if (label == "Status") FintechColors.SuccessGreen
-                            else colorScheme.onSurface)
+                        if (value != null) {
+                            Text(value,
+                                style      = MaterialTheme.typography.bodySmall,
+                                fontWeight = if (label == "Status") FontWeight.Bold else FontWeight.Medium,
+                                color      = if (label == "Status") FintechColors.SuccessGreen
+                                else colorScheme.onSurface)
+                        }
                     }
                 }
             }
@@ -1628,44 +1642,3 @@ fun RegistrationStepBar(currentStep: Int, steps: List<String>) {
 // ─────────────────────────────────────────────
 // PREVIEWS
 // ─────────────────────────────────────────────
-
-@Preview(name = "DMT – Light", showBackground = true)
-@Preview(name = "DMT – Dark",  showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Composable
-fun PreviewDmtScreen() {
-    MaterialTheme { DmtScreen() }
-}
-
-@Preview(name = "Beneficiary List", showBackground = true)
-@Composable
-fun PreviewBeneficiaryList() {
-    MaterialTheme {
-        BeneficiaryListScreen(
-            senderMobile  = "9876543210",
-            beneficiaries = listOf(
-                BeneDetail("1234567890", "Ansh Sharma", "0", 1, "SBIN0001234", "9876543210")
-            ),
-            onPayClick    = {}
-        )
-    }
-}
-
-@Preview(name = "New User Success", showBackground = true)
-@Composable
-fun PreviewNewUserSuccess() {
-    MaterialTheme {
-        NewUserSuccessScreen(senderMobile = "9876543210", onContinue = {})
-    }
-}
-
-@Preview(name = "Transaction Success", showBackground = true)
-@Composable
-fun PreviewTransactionSuccess() {
-    MaterialTheme {
-        TransactionSuccessScreen(
-            beneficiary = BeneDetail("1234567890", "Ansh Sharma", "0", 1, "SBIN0001234", "9876543210"),
-            amount      = "5000",
-            onDone      = {}
-        )
-    }
-}

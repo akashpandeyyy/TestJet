@@ -44,64 +44,71 @@ data class FingerprintDevice(
     val icon:         ImageVector = Icons.Default.Fingerprint
 )
 
-val fingerprintDevicesMock = listOf(
-    FingerprintDevice(
-        id           = "mantra_mfs100",
-        name         = "Mantra MFS100",
-        model        = "MFS100",
-        manufacturer = "Mantra Softech",
-        isConnected  = true
-    ),
-    FingerprintDevice(
-        id           = "mantra_mfs110",
-        name         = "Mantra MFS110",
-        model        = "MFS110",
-        manufacturer = "Mantra Softech",
-        isConnected  = false
-    ),
-    FingerprintDevice(
-        id           = "morpho_mso300",
-        name         = "Morpho MSO 300",
-        model        = "MSO 300",
-        manufacturer = "IDEMIA (Morpho)",
-        isConnected  = false
-    ),
-    FingerprintDevice(
-        id           = "morpho_mso1300",
-        name         = "Morpho MSO 1300",
-        model        = "MSO 1300 E3",
-        manufacturer = "IDEMIA (Morpho)",
-        isConnected  = false
-    ),
-    FingerprintDevice(
-        id           = "startek_fm220u",
-        name         = "Startek FM220U",
-        model        = "FM220U",
-        manufacturer = "Startek",
-        isConnected  = false
-    ),
-    FingerprintDevice(
-        id           = "secugen_hamster",
-        name         = "SecuGen Hamster Pro",
-        model        = "HU20",
-        manufacturer = "SecuGen",
-        isConnected  = false
-    ),
-    FingerprintDevice(
-        id           = "precision_biometric",
-        name         = "Precision PB510",
-        model        = "PB510",
-        manufacturer = "Precision Biometric",
-        isConnected  = false
-    ),
-    FingerprintDevice(
-        id           = "next_biometrics",
-        name         = "Next NB-3010-U",
-        model        = "NB-3010-U",
-        manufacturer = "Next Biometrics",
-        isConnected  = false
-    ),
+ val fingerprintDevicesMock = listOf(
+    FingerprintDevice("face_scan", "Face Scan", "Face", "Generic", false),
+    FingerprintDevice("mantra_mfs110", "Mantra L1", "MFS110", "Mantra Softech", false),
+    FingerprintDevice("mantra_iris", "Mantra IRIS", "MIS100V2", "Mantra Softech", false),
+    FingerprintDevice("morpho_l1", "Morpho - L1", "MSO 1300 E3", "IDEMIA (Morpho)", false)
 )
+
+//val fingerprintDevicesMock = listOf(
+//    FingerprintDevice(
+//        id           = "mantra_mfs100",
+//        name         = "Mantra MFS100",
+//        model        = "MFS100",
+//        manufacturer = "Mantra Softech",
+//        isConnected  = true
+//    ),
+//    FingerprintDevice(
+//        id           = "mantra_mfs110",
+//        name         = "Mantra MFS110",
+//        model        = "MFS110",
+//        manufacturer = "Mantra Softech",
+//        isConnected  = false
+//    ),
+//    FingerprintDevice(
+//        id           = "morpho_mso300",
+//        name         = "Morpho MSO 300",
+//        model        = "MSO 300",
+//        manufacturer = "IDEMIA (Morpho)",
+//        isConnected  = false
+//    ),
+//    FingerprintDevice(
+//        id           = "morpho_mso1300",
+//        name         = "Morpho MSO 1300",
+//        model        = "MSO 1300 E3",
+//        manufacturer = "IDEMIA (Morpho)",
+//        isConnected  = false
+//    ),
+//    FingerprintDevice(
+//        id           = "startek_fm220u",
+//        name         = "Startek FM220U",
+//        model        = "FM220U",
+//        manufacturer = "Startek",
+//        isConnected  = false
+//    ),
+//    FingerprintDevice(
+//        id           = "secugen_hamster",
+//        name         = "SecuGen Hamster Pro",
+//        model        = "HU20",
+//        manufacturer = "SecuGen",
+//        isConnected  = false
+//    ),
+//    FingerprintDevice(
+//        id           = "precision_biometric",
+//        name         = "Precision PB510",
+//        model        = "PB510",
+//        manufacturer = "Precision Biometric",
+//        isConnected  = false
+//    ),
+//    FingerprintDevice(
+//        id           = "next_biometrics",
+//        name         = "Next NB-3010-U",
+//        model        = "NB-3010-U",
+//        manufacturer = "Next Biometrics",
+//        isConnected  = false
+//    ),
+//)
 
 
 // ─────────────────────────────────────────────

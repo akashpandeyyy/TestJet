@@ -33,13 +33,6 @@ object RdHelper {
     const val KEY_PID_OPTIONS = "PID_OPTIONS"
     const val KEY_PID_DATA = "PID_DATA"
 
-//    fun getInputKey(deviceId: String): String {
-//        return if (deviceId == "face") KEY_FACE_REQUEST else KEY_PID_OPTIONS
-//    }
-//
-//    fun getOutputKey(deviceId: String): String {
-//        return if (deviceId == "face") KEY_FACE_RESPONSE else KEY_PID_DATA
-//    }
 
 fun getInputKey(deviceId: String): String {
     return when (deviceId) {
@@ -72,38 +65,6 @@ fun getInputKey(deviceId: String): String {
         iCount = "1" // "1" means one eye
     )
 
-//    fun makePidXm(data: PidOptData): String {
-//        val xml = """
-//            <PidOptions env="P" ver="1.0">
-//                <CustOpts>
-//                    <Param name="purpose" value="auth"/>
-//                    <Param name="requestAdditionalInfo" value="true"/>
-//                </CustOpts>
-//                <Opts fCount="${data.fCount}" fType="${data.fType}" format="0" iCount="${data.iCount}" iType="" pCount="1" pType="1" pidVer="2.0" posh="UNKNOWN" timeout="20000" wadh=""/>
-//            </PidOptions>
-//        """.trimIndent()
-//        Log.d("RdHelper", "Generated XML:\n$xml")
-//        return xml
-//    }
-
-//    fun makePidXm(data: PidOptData): String {
-//        val xml = """
-//        <PidOptions env="P" ver="1.0">
-//            <CustOpts>
-//                <Param name="purpose" value="auth"/>
-//                <Param name="requestAdditionalInfo" value="true"/>
-//            </CustOpts>
-//            <Opts fCount="${data.fCount}" fType="${data.fType}" format="0" iCount="${data.iCount}" iType="0" pCount="1" pType="1" pidVer="2.0" posh="UNKNOWN" timeout="20000" wadh=""/>
-//        </PidOptions>
-//    """.trimIndent()
-//        Log.d("RdHelper", "Generated XML:\n$xml")
-//        return xml
-//    }
-
-
-//    fun makePidXm(data: PidOptData): String {
-//        return "<PidOptions env=\"P\" ver=\"1.0\"><CustOpts><Param name=\"purpose\" value=\"auth\"/><Param name=\"requestAdditionalInfo\" value=\"true\"/></CustOpts><Opts fCount=\"${data.fCount}\" fType=\"${data.fType}\" format=\"0\" iCount=\"${data.iCount}\" iType=\"0\" pCount=\"1\" pType=\"1\" pidVer=\"2.0\" posh=\"UNKNOWN\" timeout=\"20000\" wadh=\"\"/></PidOptions>"
-//    }
 
     // 1. Face
     private fun getFaceXml(): String {
@@ -123,31 +84,6 @@ fun getInputKey(deviceId: String): String {
             getFingerXml(data)
         }
     }
-
-
-
-
-
-
-//    fun getAction(selectedDevice: String): String {
-//        return when (selectedDevice) {
-//            "mfs110", "morpho_l1" -> FP_RD_CAPTURE_ACTION
-//            "mantra_mis100v2" -> "com.mantra.mfs110.rdservice"
-//            "face" -> FACE_RD_CAPTURE_ACTION
-//            else -> FACE_RD_CAPTURE_ACTION
-//        }
-//    }
-//
-//    fun getPackage(selectedDevice: String): String {
-//        return when (selectedDevice) {
-//            "mfs110" -> MANTRA_RD_PACKAGE
-//            "mantra_mis100v2" -> "com.mantra.mfs110.rdservice"
-//            "morpho_l1" -> MORPHO_RD_PACKAGE
-//            "face" -> FACE_RD_PACKAGE
-//            else -> FACE_RD_PACKAGE
-//        }
-//    }
-
 
 
     fun getAction(selectedDevice: String): String {

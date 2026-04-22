@@ -7,9 +7,12 @@ import com.example.modernui.Api.ApiEndpoints.Aeps.AEPS_STATUS_APP
 import com.example.modernui.Api.ApiEndpoints.Aeps.AEPS_TRANSACTION
 import com.example.modernui.Api.ApiEndpoints.BankList.Bank_List
 import com.example.modernui.Api.ApiEndpoints.CMS.CMS
+import com.example.modernui.Api.ApiEndpoints.DMT.CREATE_TRANSACTION
 import com.example.modernui.Api.ApiEndpoints.DMT.JIO_VALIDATE_CUSTOMER
 import com.example.modernui.Api.ApiEndpoints.DMT.SEND_KYC_DATA
 import com.example.modernui.Api.ApiEndpoints.DMT.SEND_OTP
+import com.example.modernui.Api.ApiEndpoints.DMT.TRANSACTION_RESEND_OTP
+import com.example.modernui.Api.ApiEndpoints.DMT.VALIDATE_TRANSACTION_OTP
 import com.example.modernui.Api.ApiEndpoints.DMT.VERIFY_OTP
 import com.example.modernui.Api.ApiEndpoints.Insurance.Insurance as INSURANCE_ENDPOINT
 import com.example.modernui.Api.ApiEndpoints.Recharge.TRANSACTION as RECHARGE_TRANSACTION
@@ -35,10 +38,16 @@ import com.example.modernui.ui.screens.common.model.TwoFAresponce
 import com.example.modernui.ui.screens.common.model.TwoFaAuthrequest
 import com.example.modernui.ui.screens.common.model.TwoFaFinalAuthResponse
 import com.example.modernui.ui.screens.common.model.TwoFaValidationRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.CreateTnxResponse
+import com.example.modernui.ui.screens.dmt.jiomodel.CreateTxnRequest
 import com.example.modernui.ui.screens.dmt.jiomodel.KycDataRequest
 import com.example.modernui.ui.screens.dmt.jiomodel.KycDataResponse
+import com.example.modernui.ui.screens.dmt.jiomodel.ReValidateTnxRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.ReValidateTnxResponce
 import com.example.modernui.ui.screens.dmt.jiomodel.SendOtpRequest
 import com.example.modernui.ui.screens.dmt.jiomodel.SendOtpResponse
+import com.example.modernui.ui.screens.dmt.jiomodel.ValidateTnxRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.ValidateTnxResponce
 import com.example.modernui.ui.screens.dmt.jiomodel.ValidateUserRequest
 import com.example.modernui.ui.screens.dmt.jiomodel.ValidateUserResponse
 import com.example.modernui.ui.screens.dmt.jiomodel.VerifyOtpRequest
@@ -158,7 +167,7 @@ interface ApiService {
     @GET(INSURANCE_ENDPOINT)
     suspend fun insuranceLead(): InsuranceResponse
 
-    // DMT
+    // JIO DMT
     @POST(JIO_VALIDATE_CUSTOMER)
     suspend fun jiodmtvalidatecustmoer(
         @Body request: ValidateUserRequest
@@ -179,7 +188,19 @@ interface ApiService {
         @Body request: VerifyOtpRequest
     ): VerifyOtpResponse
 
+    @POST(CREATE_TRANSACTION)
+    suspend fun createtnx(
+        @Body request: CreateTxnRequest
+    ): CreateTnxResponse
 
+    @POST(VALIDATE_TRANSACTION_OTP)
+    suspend fun validatetnx(
+        @Body request: ValidateTnxRequest
+    ): ValidateTnxResponce
 
+    @POST(TRANSACTION_RESEND_OTP)
+    suspend fun resendtnx(
+        @Body request: ReValidateTnxRequest
+    ): ReValidateTnxResponce
 
 }

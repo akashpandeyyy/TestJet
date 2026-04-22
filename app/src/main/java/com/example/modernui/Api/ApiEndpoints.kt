@@ -16,7 +16,7 @@ object ApiEndpoints {
         const val MOBILE_PLANS = "recharge/mobilePlans/{mobileNumber}"
         const val TRANSACTION = "recharge/transaction"
         const val DTH_PLAN = "recharge/dthPlans"
-        const val DTH_TRANSACTION = "recharge/dthPlans"
+
 
     }
 
@@ -51,6 +51,10 @@ object BankList
 
     object DMT
     {
+        /*
+        *  JIO DMT
+        * */
+
        //validate customer
         const val JIO_VALIDATE_CUSTOMER="dmt/validateUser"
 
@@ -62,6 +66,25 @@ object BankList
 
         // verify otp
         const val VERIFY_OTP="dmt/verifyOtp"
+
+        //PAYMENT SECTION
+        const val CREATE_TRANSACTION="dmt/createTransaction"
+        const val VALIDATE_TRANSACTION_OTP="dmt/validateTransaction"
+        const val TRANSACTION_RESEND_OTP="dmt/resendTransactionOtp"
+
+
+
+
+
+
+
+
+        /*
+        * AIRTEL DMT
+        * */
+
+
+
 
 
 
