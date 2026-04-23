@@ -71,7 +71,7 @@ fun getInputKey(deviceId: String): String {
         return """<PidOptions env="P" ver="1.0"><CustOpts><Param name="purpose" value="auth"/><Param name="requestAdditionalInfo" value="true"/></CustOpts><Opts fCount="" fType="" format="0" iCount="" iType="" pCount="1" pType="1" pidVer="2.0" posh="UNKNOWN" timeout="20000" wadh=""/></PidOptions>""".trimIndent()
     }
 
-    // 2. Fingerprint ke liye XML (As per Mantra/Morpho Spec jo aapne diya)
+    // 2. Fingerprint
     private fun getFingerXml(data: PidOptData, env: String = "P"): String {
         return """<PidOptions ver="1.0"> <Opts fCount="${data.fCount}" fType="${data.fType}" iCount="${data.iCount}" pCount="0" format="0" pidVer="2.0" timeout="20000" posh="UNKNOWN" env="$env" wadh=""/> <CustOpts><Param name="mantrakey" value="" /></CustOpts> </PidOptions>""".trimIndent()
     }
@@ -85,6 +85,25 @@ fun getInputKey(deviceId: String): String {
         }
     }
 
+    // for ekyc start
+   fun makekycPidXm(deviceId: String, data: PidOptData): String {
+        return if (deviceId == "face") {
+            getekycFaceXml()
+        } else {
+            getekycFingerXml(data)
+        }
+    }
+
+    // 1. Face
+    private fun getekycFaceXml(): String {
+        return """<PidOptions env="P" ver="1.0"><CustOpts><Param name="purpose" value="auth"/><Param name="requestAdditionalInfo" value="true"/></CustOpts><Opts fCount="" fType="" format="0" iCount="" iType="" pCount="1" pType="1" pidVer="2.0" posh="UNKNOWN" timeout="20000" wadh=""/></PidOptions>""".trimIndent()
+    }
+
+    // 2. Fingerprint
+    private fun getekycFingerXml(data: PidOptData, env: String = "P"): String {
+        return """<PidOptions ver="1.0"> <Opts fCount="${data.fCount}" fType="${data.fType}" iCount="${data.iCount}" pCount="0" format="0" pidVer="2.0" timeout="20000" posh="UNKNOWN" env="$env" wadh="E0jzJ/P8UopUHAieZn8CKqS4WPMi5ZSYXgfnlfkWjrc="/> <CustOpts><Param name="mantrakey" value="" /></CustOpts> </PidOptions>""".trimIndent()
+    }
+// for ekyc end
 
     fun getAction(selectedDevice: String): String {
         return when (selectedDevice) {

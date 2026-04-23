@@ -23,6 +23,7 @@ import com.example.modernui.ui.screens.dmt.jiomodel.KycDataRequest
 import com.example.modernui.ui.screens.dmt.jiomodel.KycDataResponse
 import com.example.modernui.ui.screens.dmt.jiomodel.ReValidateTnxRequest
 import com.example.modernui.ui.screens.dmt.jiomodel.ReValidateTnxResponce
+import com.example.modernui.ui.screens.dmt.jiomodel.RegbeniRequest
 import com.example.modernui.ui.screens.dmt.jiomodel.SendOtpRequest
 import com.example.modernui.ui.screens.dmt.jiomodel.SendOtpResponse
 import com.example.modernui.ui.screens.dmt.jiomodel.ValidateTnxRequest
@@ -178,6 +179,10 @@ class UserRepo @Inject constructor(
     }
     suspend fun jiodmtverifyotp(request : VerifyOtpRequest): VerifyOtpResponse {
         return apiService.jiodmtverifyotp(request)
+    }
+
+    suspend fun regbeni(request : RegbeniRequest): ReValidateTnxResponce {
+        return apiService.regbeni(request)
     }
     suspend fun createtnx(request : CreateTxnRequest): CreateTnxResponse {
         return apiService.createtnx(request)

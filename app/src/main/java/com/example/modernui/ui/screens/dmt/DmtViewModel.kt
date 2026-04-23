@@ -18,11 +18,13 @@ import com.example.modernui.ui.components.intentpackage.RdHelper
 import com.example.modernui.ui.screens.dmt.jiomodel.CreateTxnRequest
 import com.example.modernui.ui.screens.dmt.jiomodel.KycDataRequest
 import com.example.modernui.ui.screens.dmt.jiomodel.ReValidateTnxRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.RegbeniRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.SendOtpRequest
 import com.example.modernui.ui.screens.dmt.jiomodel.ValidateTnxRequest
+import com.example.modernui.ui.screens.dmt.jiomodel.VerifyOtpRequest
 import kotlin.collections.emptyList
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -111,12 +113,16 @@ class DmtViewModel @Inject constructor(
 
                 val response = userRepo.jiodmtvalidatecustmoer(request)
 
-                if (response.status == 22 && response.data != null) {
+                if (response.status == 22 ) {
 
                     _beneficiaries.value = response.data.beneDetails
                     onUserFound(true)
                     val navigationEvent = _navigationEvent
-                } else {
+                }
+                else if (response.status==1){
+                    //add beni list
+                }
+                else {
                     onUserFound(false) // New user hai
                 }
             } catch (e: Exception) {
@@ -137,9 +143,19 @@ class DmtViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
+                val location = locationProvider.getCurrentLocation()
+                val request = SendOtpRequest(
+                    mobile = mobile,
+                    email = "NA",
+                    latitude = location?.first,
+                    longitude = location?.second
+                )
+                val response = userRepo.jiodmtsendotp(request)
+                if (response.status==1){
+                    Log.d("Send Otp res",response.toString())
+                    onResult(true)
+                }
 
-                delay(1000)
-                onResult(true)
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Failed to send OTP"
                 onResult(false)
@@ -186,7 +202,7 @@ class DmtViewModel @Inject constructor(
                 val response = userRepo.jiodmtcustmoerkyc(request)
 
                 if (response.status == 1 ) {
-                    isotp.value= 1.toString()
+
                     Log.d("jiodmtcustmoerkyc",response.toString())
 
                 } else {
@@ -221,7 +237,7 @@ class DmtViewModel @Inject constructor(
                     else -> RdHelper.fingType
                 }
 
-                val pidOptions = RdHelper.makePidXm(deviceId, pidOptData)
+                val pidOptions = RdHelper.makekycPidXm(deviceId, pidOptData)
                 val action = RdHelper.getAction(deviceId)
                 val packageName = RdHelper.getPackage(deviceId)
                 val inputKey = RdHelper.getInputKey(deviceId)
@@ -247,13 +263,48 @@ class DmtViewModel @Inject constructor(
         selectedDevice.value = device
     }
 
+    fun regbeni(){
+
+    }
     fun verifyOtp(otp: String, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                delay(1500)
-                onResult(true)
+                val location = locationProvider.getCurrentLocation()
+                val request = VerifyOtpRequest(
+                    mobile = senderNumber.value,
+                    otp = otp,
+                    latitude = location?.first ?: "0.0",
+                    longitude = location?.second ?: "0.0"
+                )
+                val response = userRepo.jiodmtverifyotp(request)
+                if (response.status == 1) {
+//                    onResult(true)
+                    val request = RegbeniRequest(
+                        mobile = senderNumber.value,
+                        authCode = response.data,
+                        agentId = "NA",
+                        latitude = location?.first ?: "0.0",
+                        longitude = location?.second ?: "0.0"
+                    )
+                    val response = userRepo.regbeni(request)
+                    if (response.status == 1) {
+                        onResult(true)
+                        Toast.makeText(context,response.message+" Click on Send",Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context,response.message,Toast.LENGTH_SHORT).show()
+                    }
+
+
+
+
+
+                } else {
+                    _errorMessage.value = response.message ?: "Verification failed"
+                    onResult(false)
+                }
             } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Verification error"
                 onResult(false)
             } finally {
                 _isLoading.value = false

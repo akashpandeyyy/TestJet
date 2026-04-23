@@ -1,6 +1,7 @@
 package com.example.modernui.ui.screens.dmt
 
 import android.content.res.Configuration
+import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -40,6 +41,7 @@ import com.example.modernui.ui.screens.cashdeposite.SelectedDeviceCard
 import com.example.modernui.ui.screens.dmt.jiomodel.BeneDetail
 import com.example.modernui.ui.screens.dmt.jiomodel.Dataa
 import com.example.modernui.ui.theme.FintechColors
+import com.google.ai.client.generativeai.type.content
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -164,7 +166,7 @@ fun DmtScreen(
                     DmtScreen.PAY_VERIFY_OTP      -> currentScreen = DmtScreen.PAY_SEND_OTP
                     DmtScreen.NEW_USER_VERIFY_OTP -> currentScreen = DmtScreen.NEW_USER_SEND_OTP
                     DmtScreen.NEW_USER_SEND_OTP -> {
-                        if (selectedTab == 1) currentScreen = DmtScreen.NEW_USER_BIOMETRIC
+                        if (selectedTab == 1) currentScreen = DmtScreen.NEW_USER_VERIFY_OTP
                         else currentScreen = DmtScreen.ENTER_MOBILE
                     }
                     DmtScreen.NEW_USER_BIOMETRIC -> {
@@ -286,9 +288,12 @@ fun DmtScreen(
                         viewModel.verifyOtp(otpValue) { success ->
                             if (success) {
                                 if (selectedTab == 1) currentScreen = DmtScreen.NEW_USER_SUCCESS
-                                else currentScreen = DmtScreen.NEW_USER_BIOMETRIC
+                                else  currentScreen = DmtScreen.NEW_USER_BIOMETRIC
                             }
                         }
+                    },
+                    onResend = {
+                        viewModel.sendOtp(senderMobile) { }
                     },
                     isLoading   = isLoading,
                     currentStep  = if (selectedTab == 1) 3 else 2,
@@ -297,8 +302,13 @@ fun DmtScreen(
 
                 DmtScreen.NEW_USER_BIOMETRIC -> NewUserBiometricScreen(
                     onVerified = {
-                        if (selectedTab == 1) currentScreen = DmtScreen.NEW_USER_SEND_OTP
-                        else currentScreen = DmtScreen.NEW_USER_SUCCESS
+                        if (selectedTab == 1) {
+                            viewModel.sendOtp(senderMobile) { success ->
+                                if (success) currentScreen = DmtScreen.NEW_USER_VERIFY_OTP
+                            }
+                        } else {
+                            currentScreen = DmtScreen.NEW_USER_SUCCESS
+                        }
                     },
                     onDeviceClick = { /* Handled in screen if needed, but usually just shows sheet */ },
                     viewModel = viewModel,
@@ -310,7 +320,17 @@ fun DmtScreen(
                     senderMobile = senderMobile,
                     onContinue   = {
                         otpValue      = ""
-                        currentScreen = DmtScreen.ENTER_MOBILE
+                        if (selectedTab == 1) {
+                            viewModel.jiocheckMobile(senderMobile) { isFound ->
+                                if (isFound) currentScreen = DmtScreen.BENEFICIARY_LIST
+                                else currentScreen = DmtScreen.ENTER_MOBILE
+                            }
+                        } else {
+                            viewModel.airtelcheckMobile(senderMobile) { isFound ->
+                                if (isFound) currentScreen = DmtScreen.BENEFICIARY_LIST
+                                else currentScreen = DmtScreen.ENTER_MOBILE
+                            }
+                        }
                     }
                 )
             }
@@ -1133,7 +1153,7 @@ fun NewUserSendOtpScreen(
 
         NavyPrimaryButton(
             text    = if (isLoading) "Sending..." else "Send OTP",
-            onClick = {},
+            onClick = onOtpSent,
             enabled = !isLoading,
             icon    = Icons.Default.Sms
         )
@@ -1153,7 +1173,8 @@ fun NewUserVerifyOtpScreen(
     onVerified:   () -> Unit,
     isLoading:    Boolean = false,
     currentStep:  Int,
-    steps:        List<String>
+    steps:        List<String>,
+    onResend:     () -> Unit = {}
 ) {
     var resendTimer by remember { mutableIntStateOf(30) }
 
@@ -1192,7 +1213,10 @@ fun NewUserVerifyOtpScreen(
                         color = MaterialTheme.colorScheme.outline
                     )
                     if (resendTimer == 0) {
-                        TextButton(onClick = { resendTimer = 30 }) {
+                        TextButton(onClick = {
+                            resendTimer = 30
+                            onResend()
+                        }) {
                             Text("Resend OTP",
                                 color      = FintechColors.NavyDark,
                                 fontWeight = FontWeight.Bold,

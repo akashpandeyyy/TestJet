@@ -1,9 +1,36 @@
 package com.example.modernui.ui.screens.dmt.jiomodel
-import com.google.gson.annotations.SerializedName
+import com.google.gson.JsonElement
+import kotlinx.serialization.*
 
-data class KycDataResponse(
-    @SerializedName("status") val status: Int,
-    @SerializedName("message") val message: String,
-    @SerializedName("errorMessage") val errorMessage: String?,
-    @SerializedName("data") val data: Any?
+import kotlinx.serialization.descriptors.*
+import kotlinx.serialization.encoding.*
+
+@Serializable
+data class KycDataResponse (
+    val status: Int,
+    val message: String,
+    val errorMessage: JsonElement? = null,
+    val data: Datam
+)
+
+@Serializable
+data class Datam (
+    val uidaiData: UidaiData
+)
+
+@Serializable
+data class UidaiData (
+    val ret: String,
+    val code: String,
+    val txn: String,
+    val poi: Poi,
+    val ts: String,
+    val token: String
+)
+
+@Serializable
+data class Poi (
+    val gender: String,
+    val dob: String,
+    val name: String
 )

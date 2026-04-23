@@ -9,6 +9,7 @@ import com.example.modernui.Api.ApiEndpoints.BankList.Bank_List
 import com.example.modernui.Api.ApiEndpoints.CMS.CMS
 import com.example.modernui.Api.ApiEndpoints.DMT.CREATE_TRANSACTION
 import com.example.modernui.Api.ApiEndpoints.DMT.JIO_VALIDATE_CUSTOMER
+import com.example.modernui.Api.ApiEndpoints.DMT.REG_BENI
 import com.example.modernui.Api.ApiEndpoints.DMT.SEND_KYC_DATA
 import com.example.modernui.Api.ApiEndpoints.DMT.SEND_OTP
 import com.example.modernui.Api.ApiEndpoints.DMT.TRANSACTION_RESEND_OTP
@@ -44,6 +45,7 @@ import com.example.modernui.ui.screens.dmt.jiomodel.KycDataRequest
 import com.example.modernui.ui.screens.dmt.jiomodel.KycDataResponse
 import com.example.modernui.ui.screens.dmt.jiomodel.ReValidateTnxRequest
 import com.example.modernui.ui.screens.dmt.jiomodel.ReValidateTnxResponce
+import com.example.modernui.ui.screens.dmt.jiomodel.RegbeniRequest
 import com.example.modernui.ui.screens.dmt.jiomodel.SendOtpRequest
 import com.example.modernui.ui.screens.dmt.jiomodel.SendOtpResponse
 import com.example.modernui.ui.screens.dmt.jiomodel.ValidateTnxRequest
@@ -201,6 +203,11 @@ interface ApiService {
     @POST(TRANSACTION_RESEND_OTP)
     suspend fun resendtnx(
         @Body request: ReValidateTnxRequest
+    ): ReValidateTnxResponce
+
+    @POST(REG_BENI)
+    suspend fun regbeni(
+        @Body request: RegbeniRequest
     ): ReValidateTnxResponce
 
 }

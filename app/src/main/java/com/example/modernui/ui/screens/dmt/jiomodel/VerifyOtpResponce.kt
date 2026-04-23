@@ -6,5 +6,5 @@ data class VerifyOtpResponse(
     @SerializedName("status") val status: Int,
     @SerializedName("message") val message: String,
     @SerializedName("errorMessage") val errorMessage: String?,
-    @SerializedName("data") val data: Any?
+    @SerializedName("data") val data: String?
 )

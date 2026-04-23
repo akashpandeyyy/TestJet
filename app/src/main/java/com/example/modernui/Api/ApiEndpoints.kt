@@ -71,6 +71,7 @@ object BankList
         const val CREATE_TRANSACTION="dmt/createTransaction"
         const val VALIDATE_TRANSACTION_OTP="dmt/validateTransaction"
         const val TRANSACTION_RESEND_OTP="dmt/resendTransactionOtp"
+        const val REG_BENI ="dmt/registerBene"
 
 
 
